@@ -59,7 +59,7 @@ Ensure you have the following installed:
 To install required Python dependencies:
 pip install -r requirements.txt
 
-**Running the Scripts**
+### **Running the Scripts**
 1. Automated Literature Search
 python scripts/literature_search.py
 2. Generate PRISMA Flow Diagram
@@ -67,17 +67,18 @@ python scripts/prisma_diagram.py
 3. Perform Text Mining & NLP
 jupyter notebook scripts/text_mining.ipynb
 
-Contribution Guidelines
+### **Contribution Guidelines**
 We welcome contributions! Please follow these steps:
 
-Fork the repository.
-Create a new branch (feature-branch).
-Commit changes with a clear message.
-Submit a pull request for review.
-License
+### Fork the repository.
+- Create a new branch (feature-branch).
+- Commit changes with a clear message.
+- Submit a pull request for review.
+
+### License
 This repository is licensed under the MIT License – see the LICENSE file for details.
 
-Contact
-For inquiries or collaborations, please contact: Dr. Nti
+### Contact
+- For inquiries or collaborations, please contact: Dr. Nti
 📧 ntious1@gmail.com
 📍 University of Cincinnati, USA
