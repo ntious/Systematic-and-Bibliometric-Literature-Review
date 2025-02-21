@@ -13,6 +13,7 @@ By the end of this workshop, participants will:
 - Integrate systematic and bibliometric review methodologies into their research projects.
 
 ## Repository Structure
+```
 systematic-review-workshop/
 │── docs/                              # Documentation and proposal files
 │   ├── proposal.pdf                   # Workshop proposal document
@@ -44,7 +45,7 @@ systematic-review-workshop/
 │── LICENSE                             # Open-source license (MIT, Apache, etc.)
 │── CONTRIBUTING.md                     # Guidelines for contributors
 │── requirements.txt                     # Python dependencies for scripts
-
+```
 
 ## Getting Started
 ### **Prerequisites**
