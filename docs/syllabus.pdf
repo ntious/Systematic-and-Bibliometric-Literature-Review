@@ -1,0 +1,81 @@
+# **Workshop on Systematic and Bibliometric Literature Review**  
+## **Syllabus**  
+### **Instructor**: Dr. I. K. Nti  
+### **Institution**: University of Cincinnati  
+### **Duration**: 3 Days  
+
+## **Course Description**  
+This workshop provides postgraduate students and early career researchers with the essential skills to conduct systematic and bibliometric literature reviews. 
+Participants will learn how to structure and conduct high-quality reviews using systematic review protocols and bibliometric tools such as VOSviewer and R. 
+The training is designed to enhance research rigor, identify gaps in the literature, and facilitate the integration of evidence-based findings into research projects.
+
+## **Learning Objectives**  
+By the end of the workshop, participants will be able to:  
+1. Develop a systematic review protocol, including research questions, inclusion/exclusion criteria, and search strategies.  
+2. Use bibliometric tools (VOSviewer and R for bibliometrics) to analyze research trends, key authors, and citation networks.  
+3. Critically evaluate and synthesize studies for systematic reviews.  
+4. Apply text mining techniques to analyze research literature.  
+5. Structure and present a systematic or bibliometric review for academic publications.  
+
+## **Workshop Schedule**  
+### **Day 1: Introduction to Systematic and Bibliometric Literature Reviews**  
+- **Session 1:** Introduction to Literature Review Types  
+  - Traditional vs. Systematic vs. Bibliometric Reviews  
+  - Importance of systematic and bibliometric analysis in research  
+- **Session 2:** Systematic Review Protocols  
+  - Developing research questions using frameworks (PICO, SPIDER)  
+  - Inclusion and exclusion criteria  
+  - Search strategies for literature reviews  
+- **Session 3:** PRISMA Guidelines & Study Selection Process  
+  - Understanding the PRISMA flow diagram  
+  - Screening and selecting relevant studies  
+  
+### **Day 2: Tools and Techniques for Literature Review**  
+- **Session 4:** Managing Literature with Mendeley and Zotero  
+  - Organizing references and citations  
+  - Annotation and note-taking for systematic reviews  
+- **Session 5:** Hands-on with Bibliometric Analysis  
+  - Introduction to VOSviewer and R for bibliometrics  
+  - Citation and co-citation analysis  
+  - Co-authorship mapping and research impact analysis  
+- **Session 6:** Text Mining & NLP for Literature Review  
+  - Using Python and R for text analysis  
+  - Identifying thematic clusters in research papers  
+
+### **Day 3: Application and Integration into Research Projects**  
+- **Session 7:** Synthesizing Findings into Structured Reviews  
+  - Writing a systematic literature review paper  
+  - Structuring bibliometric studies for publication  
+- **Session 8:** Presentation & Research Communication  
+  - Reporting findings in research papers and proposals  
+  - Effective visualization of bibliometric data  
+- **Session 9:** Group Exercise & Feedback  
+  - Participants present their systematic/bibliometric review drafts  
+  - Peer review and expert feedback session  
+
+## **Assessment & Certification**  
+- **Pre- and Post-Workshop Assessments**: Participants will complete a pre-assessment to gauge prior knowledge and a post-assessment to measure learning gains.  
+- **Hands-on Exercises**: Participants will be required to complete small tasks using bibliometric tools.  
+- **Final Presentation**: Each participant will present a structured draft of a literature review for feedback.  
+- **Certification**: A certificate of completion will be awarded to participants who successfully complete the training.  
+
+## **Required Software & Tools**  
+1. **Reference Management**: Mendeley or Zotero  
+2. **Bibliometric Analysis**: VOSviewer, R for bibliometrics  
+3. **Text Mining & NLP**: Python (NLTK, spaCy), R  
+
+## **Target Audience**  
+- Postgraduate students across all disciplines  
+- Early-career researchers interested in literature review methodologies  
+- Academics looking to enhance their research synthesis skills  
+
+## **Resources & Additional Readings**  
+- PRISMA Statement for Systematic Reviews (https://www.prisma-statement.org/)  
+- Systematic Reviews in Research (Book/Journal References)  
+- Bibliometric Analysis Techniques (VOSviewer Manual, R Packages)  
+
+---  
+**For inquiries, contact:**  
+📧 [ntious1@gmail.com](mailto:ntious1@gmail.com)  
+📍 University of Cincinnati, USA  
+
