@@ -75,10 +75,10 @@ We welcome contributions! Please follow these steps:
 - Commit changes with a clear message.
 - Submit a pull request for review.
 
-### License
+**License**
 This repository is licensed under the MIT License – see the LICENSE file for details.
 
-### Contact
+**Contact**
 - For inquiries or collaborations, please contact: Dr. Nti
-📧 ntious1@gmail.com
-📍 University of Cincinnati, USA
+- 📧 ntious1@gmail.com
+- 📍 University of Cincinnati, USA
