@@ -76,7 +76,7 @@ We welcome contributions! Please follow these steps:
 - Submit a pull request for review.
 
 **License**
-This repository is licensed under the MIT License – see the LICENSE file for details.
+- This repository is licensed under the MIT License – see the LICENSE file for details.
 
 **Contact**
 - For inquiries or collaborations, please contact: Dr. Nti
