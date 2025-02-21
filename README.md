@@ -1,6 +1,6 @@
 # Systematic and Bibliometric Literature Review Workshop
 A systematic literature review is a structured approach to synthesizing research, enabling researchers to draw comprehensive conclusions from existing studies. A bibliometric literature review, on the other hand, uses statistical and computational methods to analyze research output and trends, providing insights into research impacts and scholarly networks.
-Given the increased emphasis on evidence-based research in academia, postgraduate students and early carrer researchers must master these methodologies early in their studies. Currently, many postgraduate students and early carrer researchers globally struggle with these techniques, often resulting in suboptimal reviews that limit the quality of their research. ## Overview
+Given the increased emphasis on evidence-based research in academia, postgraduate students and early carrer researchers must master these methodologies early in their studies. Currently, many postgraduate students and early carrer researchers globally struggle with these techniques, often resulting in suboptimal reviews that limit the quality of their research. 
 This repository contains materials, scripts, and resources for the **Workshop on Systematic and Bibliometric Literature Review**, organized at **I. K. NTI**. The workshop aims to train postgraduate students in conducting high-quality literature reviews using **systematic review protocols and bibliometric analysis tools**.
 
 
