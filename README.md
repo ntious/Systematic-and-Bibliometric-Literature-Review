@@ -15,8 +15,8 @@ By the end of this workshop, participants will:
 ## Repository Structure
 ```
 systematic-review-workshop/
-│── docs/                              # Documentation and proposal files
-│   ├── proposal.pdf                   # Workshop proposal document
+│── docs/                             
+│             
 │   ├── syllabus.pdf                    # Detailed syllabus (if applicable)
 │   ├── learning_outcomes.md            # Workshop learning outcomes
 │   ├── resources.md                    # Additional reading and links
