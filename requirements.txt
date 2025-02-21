@@ -1,0 +1,19 @@
+scholarly  # For automated literature search using Google Scholar API
+pandas  # For handling and analyzing tabular data
+numpy  # For numerical computing and data processing
+matplotlib  # For creating visualizations and graphs
+seaborn  # For advanced statistical data visualization
+nltk  # For natural language processing and text mining
+spacy  # For NLP and entity recognition in literature reviews
+scipy  # For scientific computing and statistical analysis
+networkx  # For citation network and co-authorship analysis
+vosviewer  # For bibliometric visualization (if using Python API)
+bibliometrix  # For bibliometric analysis using R in Python
+rayyan  # For systematic review study selection and screening
+prismapy  # For generating PRISMA flow diagrams
+requests  # For handling HTTP requests in automated data retrieval
+lxml  # For parsing and scraping XML and HTML documents
+bs4  # BeautifulSoup for web scraping and parsing documents
+jupyter  # For running interactive notebooks
+notebook  # To support Jupyter Notebook execution
+tqdm  # For progress tracking in data processing tasks
