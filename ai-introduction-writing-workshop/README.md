@@ -166,6 +166,41 @@ University of Cincinnati
 
 ---
 
+## ⚠️ Limitations, Risks, and Responsible Use
+
+IntroAudit is designed to support critical evaluation and revision, but it has known limitations. Students and instructors should use it with the safeguards below.
+
+### 1) AI is not an authority (and can be wrong)
+AI feedback may be incorrectly skeptical, overly strict, or misaligned with specialized topics. Treat outputs as *review comments*, not verdicts.
+
+**Rule:** You are responsible for your claims, citations, and interpretations.  
+If the AI says “illogical” or “unsupported,” verify with course materials and credible sources before revising.
+
+### 2) Avoid “writing to please the AI”
+A key risk is passive acceptance that leads to homogenized writing. IntroAudit should strengthen *your reasoning*, not replace your voice.
+
+**Required student practice:** For every major change you make, write a 1–2 sentence justification:
+- What did you change?
+- Why did you accept or reject the AI’s suggestion?
+
+### 3) Assessment focuses on reasoning, not compliance
+Grades should not reward “agreeing with the AI.” This toolkit supports a revision process, but the final standard is academic rigor and course expectations.
+
+**Instructor option:** Require students to submit:
+- original introduction
+- revised introduction
+- a short “revision memo” (what changed + why)
+
+### 4) Model drift and prompt reliability
+LLM behavior can change over time (“model drift”). A prompt that works well today may produce different outputs later.
+
+**Mitigation:** If the AI output is unusually vague, overly agreeable, or inconsistent:
+- rerun the same prompt once
+- use a second model/tool if available
+- prioritize course criteria and instructor feedback over AI output
+
+---
+
 ## 🧭 Final Principle
 
 AI should not make you sound smarter.
