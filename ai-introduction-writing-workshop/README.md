@@ -26,3 +26,6 @@ not to replace writing.
 AI is used as a skeptical reviewer,
 not as an authority or ghostwriter.
 Students remain responsible for claims and evidence.
+
+This tool supports critical evaluation and revision.
+It is not a substitute for original writing or citation.
