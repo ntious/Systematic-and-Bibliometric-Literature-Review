@@ -1,4 +1,4 @@
-I. INTRODUCTION
+# I. INTRODUCTION
 The evaluation of academic institutions is often thought to be related to student performance, which is a metric that might be considered important by various stakeholders. It is possible that by studying these outcomes, one could perhaps design instruments to slightly improve student results or maybe reduce dropout rates. In certain regions, such as West Africa, schools are sometimes ranked based on WAEC results, and a similar situation appears to exist in Ghana regarding the BECE. Therefore, it might be somewhat useful to find a way to talk about academic performance before exams actually happen, although this is quite a complex task.
 
 Recently, there has been a perceived decline in subjects like science and math. Some people suggest that teaching in foreign languages is the main problem [1]. However, it is also argued by others [2]–[5] that there are probably many other factors involved. These might include cognitive things, like GPA, or non-cognitive things, such as whether a student likes school, their gender, or if they do sports. Because we now have a lot of computers, we have a lot of data on these things.
@@ -30,8 +30,8 @@ methodology. Then, the study results are considered in
 Section 4, while conclusions and future research areas are 
 discussed in Section 5.
 
-Refrences:
-E. I. Ani, “Debating the roots of poor academic performance in the West 
+## Refrences:
+[1] E. I. Ani, “Debating the roots of poor academic performance in the West 
 African subregion: The perspective of a philosopher,” SAGE Open, vol. 7, 
 no. 2, Art no. 2158244017707795, May 2017. 
 https://doi.org/10.1177/2158244017707795
@@ -108,3 +108,4 @@ https://doi.org/10.11591/ijeecs.v9.i2.pp447-459
 mining classifiers,” International Journal of Modern Education and 
 Computer Science, vol. 9, no. 8, pp. 9–15, Aug. 2017. 
 https://doi.org/10.5815/ijmecs.2017.08.02
+
