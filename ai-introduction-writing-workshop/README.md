@@ -200,7 +200,6 @@ LLM behavior can change over time (“model drift”). A prompt that works well 
 - prioritize course criteria and instructor feedback over AI output
 
 ---
-
 ## 🧭 Final Principle
 
 AI should not make you sound smarter.
@@ -208,5 +207,3 @@ AI should not make you sound smarter.
 AI should help you think more carefully.
 
 That is the purpose of IntroAudit.
-```
-
