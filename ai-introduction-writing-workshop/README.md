@@ -1,4 +1,4 @@
-# IntroAudit — AI-Assisted Research Introduction Workshop
+# IntroAudit: AI-Assisted Research Introduction Workshop
 
 This repository contains materials for **IntroAudit**, a workshop on writing scientifically rigorous research introductions using generative AI as a **critical auditing tool**.
 
