@@ -109,4 +109,3 @@ This paper is organized into five sections. Section 2 reviews the existing liter
 2. **Issue Type:** Primarily **Structural** (lack of a formal gap and objective framework).
 3. **Revision Order:** 1. Formalize Aim/Objectives  2. Define the Research Gap  3. Technical Rationale for MLAs.
 
-**Would you like me to generate a template for the Methodology section (Section 3) based on these revised objectives?**
