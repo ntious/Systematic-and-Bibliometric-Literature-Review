@@ -155,15 +155,11 @@ This repository is released as an educational resource.
 
 You are free to reuse, adapt, and teach with it, with attribution appreciated.
 
-(You may optionally replace this with a formal Creative Commons license.)
-
 ---
 
 ## 👨‍🏫 Author / Workshop Facilitator
-
 I. K. Nti  
 University of Cincinnati
-
 ---
 
 ## ⚠️ Limitations, Risks, and Responsible Use
