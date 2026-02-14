@@ -158,8 +158,10 @@ You are free to reuse, adapt, and teach with it, with attribution appreciated.
 ---
 
 ## 👨‍🏫 Author / Workshop Facilitator
+
 I. K. Nti  
 University of Cincinnati
+
 ---
 
 ## ⚠️ Limitations, Risks, and Responsible Use
