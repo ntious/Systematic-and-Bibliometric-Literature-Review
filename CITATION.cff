@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you adapt or reuse these research-methods materials, please cite the repository."
+title: "Systematic and Bibliometric Literature Review"
+type: software
+authors:
+  - family-names: Nti
+    given-names: Isaac Kofi
+    orcid: "https://orcid.org/0000-0001-9257-4295"
+repository-code: "https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review"
+url: "https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review"
+license: GPL-3.0-only
+keywords:
+  - systematic literature review
+  - bibliometric analysis
+  - evidence synthesis
+  - reproducible research
+  - research methods
