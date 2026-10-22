@@ -1,0 +1,59 @@
+{
+  "title": "Artificial intelligence in education and learning outcomes: protocol for a systematic review (synthetic demonstration)",
+  "is_update": false,
+  "registration": {"registry": "OSF Registries", "id": "SYNTHETIC-EXAMPLE-NOT-REGISTERED"},
+  "authors": [
+    {"name": "Alice Example", "affiliation": "Fictional University", "email": "alice@example.org", "contributions": "Conceptualization, search strategy, screening", "contact": true},
+    {"name": "Bob Example", "affiliation": "Fictional University", "email": "bob@example.org", "contributions": "Screening, data extraction", "contact": false},
+    {"name": "Carol Example", "affiliation": "Fictional Institute", "email": "carol@example.org", "contributions": "Adjudication, methods oversight", "contact": false}
+  ],
+  "guarantor": "Alice Example",
+  "amendment_plan": "Amendments are saved as new protocol versions with date, description and rationale, linked to the criteria version in force, and reported in the final review.",
+  "support": {"sources": "None (synthetic demonstration)", "sponsor": "None", "sponsor_role": ""},
+  "conflicts_of_interest": "None declared (synthetic demonstration).",
+  "review_type": "Systematic review",
+  "stage": "planned",
+  "anticipated_start": "2026-01-15",
+  "anticipated_completion": "2026-12-15",
+  "condition_or_domain": "Education; artificial intelligence",
+  "context": "Formal education settings from primary to higher education.",
+  "language": "English",
+  "country": "United States",
+  "keywords": ["artificial intelligence", "education", "learning outcomes"],
+  "rationale": "Synthetic example text: AI tools are spreading in education, but evidence on learning outcomes is scattered across disciplines and databases.",
+  "objectives": {
+    "question": "In learners in formal education, what is the association between use of AI-based tools and learning outcomes compared with no or non-AI support?",
+    "framework": "PICO",
+    "elements": {
+      "Population": "Learners in formal education settings",
+      "Intervention": "AI-based educational tools",
+      "Comparator": "No support or non-AI support",
+      "Outcomes": "Learning outcomes (achievement, skills)"
+    }
+  },
+  "eligibility": {
+    "study_characteristics": "Empirical studies (experimental, quasi-experimental, observational) on AI in education; excludes commentaries and studies without relevant outcomes.",
+    "report_characteristics": "Published 2020-2025; any language with an English abstract; journal articles and conference papers."
+  },
+  "information_sources": [
+    {"name": "OpenAlex", "platform": "OpenAlex API", "planned_date": "2026-02-01", "coverage": "2020-2025"},
+    {"name": "Crossref", "platform": "Crossref REST API", "planned_date": "2026-02-01", "coverage": "2020-2025"}
+  ],
+  "search_strategy": {"database": "OpenAlex", "strategy": "artificial intelligence education (publication years 2020-2025)"},
+  "data_management": "Records, decisions and hashes are kept in the slr-workbench ledgers and exported with manifests.",
+  "selection_process": "Two independent reviewers screen titles/abstracts and full texts after a pilot calibration round; disagreements are adjudicated by a third reviewer. Agreement is reported with Cohen's kappa and PABAK.",
+  "data_collection_process": "One reviewer proposes source-anchored extraction items; a second reviewer approves each item.",
+  "data_items": "Study design, population, setting, AI tool, comparator, outcomes, effect estimates, limitations.",
+  "outcomes": {"main": "Learning achievement", "additional": "Engagement; self-reported skills", "prioritization": "Achievement measured by objective assessment is prioritized over self-report."},
+  "risk_of_bias": "Appropriate validated tools by design (e.g. RoB 2 for randomized trials, ROBINS-I for non-randomized studies), assessed independently by two reviewers.",
+  "synthesis": {
+    "quantitative": true,
+    "criteria": "Meta-analysis when at least three studies report comparable outcomes and designs.",
+    "methods": "Random-effects meta-analysis of standardized mean differences with REML; heterogeneity via tau-squared and I-squared.",
+    "additional_analyses": "Subgroups by education level and AI tool type; sensitivity analysis excluding high risk of bias studies.",
+    "non_quantitative": ""
+  },
+  "meta_bias": "Funnel plots and Egger's test when at least ten studies contribute; selective outcome reporting checked against registrations.",
+  "confidence": "GRADE for each main outcome.",
+  "dissemination": "Peer-reviewed publication with open review data."
+}
