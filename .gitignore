@@ -86,6 +86,8 @@ record-diagnostics.json
 human-review.csv
 comparison.json
 COMPARISON.md
+/platform_enhancement_plan.md
+reviewer_feedback.md
 
 # Configurations are private by default; publish only reviewed generic examples
 /configs/*
@@ -98,3 +100,6 @@ COMPARISON.md
 !/configs/example_protocol.json
 /calibration/
 /analysis/
+
+# Machine-local launcher configuration
+.claude/

@@ -37,3 +37,6 @@ include configs/example_pipeline.json
 include configs/example_calibration.json
 include configs/example_protocol.json
 include Docs/Protocol_Guide.md
+
+prune .claude
+exclude platform_enhancement_plan.md
