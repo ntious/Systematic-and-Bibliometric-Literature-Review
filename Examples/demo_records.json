@@ -1,0 +1,25 @@
+[
+  {
+    "source": "openalex",
+    "source_id": "demo:1",
+    "doi": "https://doi.org/10.1234/example",
+    "title": "Synthetic review example",
+    "year": 2024,
+    "authors": [
+      "Example Researcher"
+    ]
+  },
+  {
+    "source": "crossref",
+    "source_id": "10.1234/example",
+    "doi": "10.1234/EXAMPLE",
+    "title": "Synthetic review example",
+    "year": 2024
+  },
+  {
+    "source": "openalex",
+    "source_id": "demo:2",
+    "title": "Synthetic record without DOI",
+    "year": 2025
+  }
+]

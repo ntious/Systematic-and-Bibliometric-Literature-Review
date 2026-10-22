@@ -1,0 +1,9 @@
+{
+  "groups": {
+    "context": ["education", "learning"],
+    "method": ["artificial intelligence", "machine learning"],
+    "task": ["assessment", "feedback"]
+  },
+  "sample_per_stratum": 2,
+  "known_items": []
+}

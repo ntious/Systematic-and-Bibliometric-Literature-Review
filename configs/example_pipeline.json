@@ -1,0 +1,7 @@
+{
+  "queries": ["artificial intelligence education", "machine learning education"],
+  "sources": ["openalex"],
+  "year_from": 2020,
+  "year_to": 2025,
+  "max_records_per_source": 30
+}

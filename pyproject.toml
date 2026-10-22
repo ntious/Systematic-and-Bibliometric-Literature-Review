@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slr-workbench"
+version = "0.5.0"
+description = "Reproducible literature retrieval, screening, bibliometrics, and evidence review"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+dependencies = []
+
+[project.optional-dependencies]
+ui-test = ["playwright>=1.50,<2"]
+analysis = ["matplotlib>=3.8,<4"]
+dev = ["pytest>=8,<10", "build>=1,<2"]
+
+[project.scripts]
+slr = "slr.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+slr = ["web/*.html", "web/*.css", "web/*.js", "web/*.json"]

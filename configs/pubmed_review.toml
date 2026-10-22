@@ -1,0 +1,6 @@
+query = '"artificial intelligence"[Title/Abstract] AND education[Title/Abstract]'
+sources = ["pubmed"]
+year_from = 2020
+year_to = 2025
+max_records_per_source = 100
+# mailto = "researcher@example.org"

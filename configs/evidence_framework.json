@@ -1,0 +1,23 @@
+{
+  "id": "example-extraction-v1",
+  "fields": [
+    {"id": "study_design", "description": "Reported study design; do not infer randomization."},
+    {"id": "population", "description": "Study population and eligibility."},
+    {"id": "sample_size", "description": "Reported sample size with units and analysis population; preserve source wording."},
+    {"id": "setting", "description": "Country, institution or other reported study context."},
+    {"id": "methods", "description": "Reported intervention, comparators, measurements and procedures."},
+    {"id": "variables", "description": "Reported variables, outcomes and measurement scales."},
+    {"id": "findings", "description": "Findings as reported, distinguishing association from causation."},
+    {"id": "limitations", "description": "Limitations explicitly reported by the source."},
+    {"id": "effect_size", "description": "Reported effect size, units, uncertainty interval and adjustment status; no calculation or invented values."}
+  ],
+  "appraisal": {
+    "id": "illustrative-custom-appraisal-v1",
+    "description": "Illustrative domain questions only. This is not a validated risk-of-bias instrument; choose an appropriate framework for the review before real use. No aggregate score is produced.",
+    "domains": [
+      {"id": "selection", "description": "Is participant selection described sufficiently for the intended review?", "judgments": ["low_concern", "some_concern", "high_concern", "unclear"]},
+      {"id": "measurement", "description": "Are outcomes and measurement procedures described sufficiently?", "judgments": ["low_concern", "some_concern", "high_concern", "unclear"]},
+      {"id": "reporting", "description": "Are results, uncertainty and limitations described sufficiently?", "judgments": ["low_concern", "some_concern", "high_concern", "unclear"]}
+    ]
+  }
+}

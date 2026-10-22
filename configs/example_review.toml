@@ -1,0 +1,7 @@
+# Each API interprets query syntax differently; validate searches with a librarian.
+query = "artificial intelligence education"
+sources = ["openalex", "crossref"]
+year_from = 2020
+year_to = 2025
+max_records_per_source = 100
+# mailto = "researcher@example.org"
