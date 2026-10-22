@@ -1,0 +1,76 @@
+[
+  {
+    "source": "synthetic-a",
+    "source_id": "demo:1",
+    "doi": "10.9000/demo1",
+    "title": "Synthetic AI learning study",
+    "year": 2022,
+    "authors": [
+      "Alice Example",
+      "Bob Example"
+    ],
+    "keywords": [
+      "AI",
+      "Learning",
+      "AI"
+    ],
+    "references": [
+      "10.9000/x",
+      "10.9000/y"
+    ],
+    "citations": 5
+  },
+  {
+    "source": "synthetic-a",
+    "source_id": "demo:2",
+    "doi": "10.9000/demo2",
+    "title": "Synthetic AI ethics study",
+    "year": 2023,
+    "authors": [
+      "Alice Example",
+      "Carol Example"
+    ],
+    "keywords": [
+      "AI",
+      "Ethics"
+    ],
+    "references": [
+      "10.9000/x",
+      "10.9000/z"
+    ],
+    "citations": null
+  },
+  {
+    "source": "synthetic-a",
+    "source_id": "demo:3",
+    "doi": "10.9000/demo3",
+    "title": "Synthetic learning ethics study",
+    "year": 2023,
+    "authors": [
+      "Bob Example",
+      "Carol Example"
+    ],
+    "keywords": [
+      "Learning",
+      "Ethics"
+    ],
+    "references": [
+      "10.9000/x",
+      "10.9000/y",
+      "10.9000/z"
+    ],
+    "citations": 2
+  },
+  {
+    "source": "synthetic-b",
+    "source_id": "demo:4",
+    "title": "Synthetic isolated report",
+    "authors": [
+      "Dana Example"
+    ],
+    "keywords": [
+      "Isolated"
+    ],
+    "citations": 100
+  }
+]

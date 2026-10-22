@@ -1,0 +1,39 @@
+prune configs
+include Examples/demo_records.json
+include CONTRIBUTING.md
+include Docs/Implementation_Roadmap.md
+include Docs/Screening_Guide.md
+include Scripts/screening_demo.py
+include Examples/bibliometrics_records.json
+include Docs/Bibliometrics_Guide.md
+include Examples/evidence_report.txt
+include Scripts/evidence_demo.py
+include Docs/Evidence_Guide.md
+recursive-include src/slr/web *.html *.css *.js *.json
+include Docs/Dashboard_Guide.md
+include Scripts/check_dashboard_browser.py
+
+include Docs/Pipeline_Guide.md
+
+# Git ignores do not control source distributions: exclude private material here too.
+prune research
+prune outputs
+prune private
+prune local
+exclude Docs/Practical_Test_Log.md
+exclude reviewer_feedback.md
+exclude Scripts/alert_triage_pilot.py
+global-exclude .env .env.* *.pem *.key *.p12 *.pfx *.sqlite *.sqlite-* *.db *.db-* *.log
+exclude configs/local.* configs/*.local.*
+global-exclude credentials.* secrets.* workspace.json jobs.json session.json SESSION.md quality.json raw-*.json raw-*.xml retrieved.json captured.json date-audit.json record-diagnostics.json human-review.csv comparison.json COMPARISON.md
+
+include Docs/Local_Data_Policy.md
+
+include configs/example_review.toml
+include configs/pubmed_review.toml
+include configs/example_criteria.md
+include configs/evidence_framework.json
+include configs/example_pipeline.json
+include configs/example_calibration.json
+include configs/example_protocol.json
+include Docs/Protocol_Guide.md

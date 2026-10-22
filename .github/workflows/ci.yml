@@ -1,0 +1,37 @@
+name: Python checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e '.[dev,analysis]'
+      - run: python -m pytest
+      - run: python -m build
+      - run: slr --config configs/example_review.toml --fixture Examples/demo_records.json --output /tmp/slr-demo
+      - run: python Scripts/screening_demo.py --output /tmp/slr-screening-demo
+      - run: slr analyze --input Examples/bibliometrics_records.json --output /tmp/slr-bibliometrics-demo --figures
+      - run: python Scripts/evidence_demo.py --output /tmp/slr-evidence-demo
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[ui-test]'
+      - run: python -m playwright install --with-deps chromium
+      - run: python Scripts/check_dashboard_browser.py --output outputs/dashboard-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-browser-check
+          path: outputs/dashboard-qa

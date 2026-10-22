@@ -17,12 +17,12 @@ There are several ways to contribute to this repository:
    - Use the following command to clone the repository to your local machine:
      ```bash
      git clone https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review.git
-     cd systematic-review-workshop
+     cd Systematic-and-Bibliometric-Literature-Review
      ```
 3. **Set Up the Development Environment:**
    - Install the required dependencies using:
      ```bash
-     pip install -r requirements.txt
+     python -m pip install -e ".[dev]"
      ```
    - If working with R, install necessary packages for bibliometric analysis:
      ```r
@@ -56,7 +56,7 @@ To ensure consistency and readability, please adhere to the following coding sta
 - Use **clear and meaningful variable names**.
 - Document functions with **docstrings**.
 - Comment code where necessary for clarity.
-- Structure files logically (e.g., place scripts in the `scripts/` directory).
+- Structure files logically (e.g., place scripts in the `src/slr/` directory).
 
 ## **5. Reporting Issues**
 If you encounter any bugs or have feature requests:
@@ -77,7 +77,7 @@ All contributors are expected to adhere to a professional and respectful code of
 - Collaborate openly and acknowledge the work of others.
 
 ## **8. License**
-By contributing, you agree that your submissions will be licensed under the **MIT License**, allowing others to freely use and modify the work while providing attribution.
+By contributing, you agree that your submissions will be licensed under the **GNU General Public License v3.0**, under the terms of the existing LICENSE file.
 
 ## **9. Acknowledgments**
 We appreciate all contributions, big or small! Contributors will be credited in the repository’s **CONTRIBUTORS.md** file. Thank you for supporting this open-source initiative!
@@ -87,3 +87,7 @@ For any further questions or clarifications, feel free to reach out by opening a
 
 🚀 **Happy Contributing!**
 
+
+## Application checks
+
+Use Python 3.11 or newer. Run `python -m pytest` and `python -m build` before submitting changes. Add mocked API fixtures for retrieval changes; never commit API keys or private research data. The CLI refuses to overwrite output directories.
