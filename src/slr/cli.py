@@ -72,6 +72,9 @@ def run(config_path, output, fixture=None):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "knowledge":
+        from .analysis_knowledge import main as knowledge_main
+        return knowledge_main(argv[1:])
     if argv and argv[0] == "report":
         from .manuscript import main as report_main
         return report_main(argv[1:])
@@ -96,7 +99,7 @@ def main(argv=None):
     if argv and argv[0] == "protocol":
         from .protocol import main as protocol_main
         return protocol_main(argv[1:])
-    parser = argparse.ArgumentParser(description=__doc__, epilog="Also available: slr report --help; slr protocol --help; slr pipeline --help; slr review --help; slr import --help; slr analyze --help; slr evidence --help; slr dashboard --help")
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Also available: slr knowledge --help; slr report --help; slr protocol --help; slr pipeline --help; slr review --help; slr import --help; slr analyze --help; slr evidence --help; slr dashboard --help")
     parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--output", required=True, help="New output directory; existing directories are never overwritten")

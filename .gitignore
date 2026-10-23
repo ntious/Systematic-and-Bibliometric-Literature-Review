@@ -131,3 +131,6 @@ metric-sources.md
 report-inputs.json
 report-provenance.json
 prisma-coverage.json
+
+# Researcher-supplied full-text validation collection
+/Papers/

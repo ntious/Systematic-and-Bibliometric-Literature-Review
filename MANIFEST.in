@@ -64,3 +64,6 @@ exclude export_word.xml
 
 include Docs/Reporting_Guide.md
 global-exclude report-inputs.json report-provenance.json prisma-coverage.json
+prune Papers
+
+include Docs/Analysis_Knowledge_Guide.md

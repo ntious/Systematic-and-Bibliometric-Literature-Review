@@ -5,7 +5,7 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 GUIDES = ('Installation_Guide', 'Dashboard_Guide', 'Screening_Guide', 'Protocol_Guide',
           'Pipeline_Guide', 'Bibliometrics_Guide', 'Corpus_Analytics_Guide',
-          'Evidence_Guide', 'Reporting_Guide', 'Local_Data_Policy', 'Implementation_Roadmap', 'Release_Guide')
+          'Evidence_Guide', 'Analysis_Knowledge_Guide', 'Reporting_Guide', 'Local_Data_Policy', 'Implementation_Roadmap', 'Release_Guide')
 
 
 def stage():

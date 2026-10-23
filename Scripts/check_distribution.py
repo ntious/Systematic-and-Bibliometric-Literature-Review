@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = {'Implementation_Roadmap.md', 'Screening_Guide.md', 'Bibliometrics_Guide.md',
         'Evidence_Guide.md', 'Dashboard_Guide.md', 'Pipeline_Guide.md',
         'Local_Data_Policy.md', 'Protocol_Guide.md', 'Corpus_Analytics_Guide.md',
-        'Installation_Guide.md', 'Release_Guide.md', 'Reporting_Guide.md'}
+        'Installation_Guide.md', 'Release_Guide.md', 'Reporting_Guide.md', 'Analysis_Knowledge_Guide.md'}
 EXAMPLES = {'demo_records.json', 'bibliometrics_records.json', 'evidence_report.txt',
             'corpus_records.json', 'synthetic_venue_metrics.csv'}
 CONFIGS = {'example_review.toml', 'pubmed_review.toml', 'example_criteria.md',
