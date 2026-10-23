@@ -81,7 +81,9 @@ def main():
                 page.get_by_role('button',name='Cancel',exact=True).click()
                 page.screenshot(path=str(output/'analytics-desktop.png'),full_page=True)
                 page.set_viewport_size({'width':390,'height':844})
-                assert page.evaluate('() => document.documentElement.scrollWidth<=innerWidth'), 'Mobile page overflow'
+                page.screenshot(path=str(output/'analytics-mobile-diagnostic.png'),full_page=True)
+                overflow=page.evaluate('() => [...document.querySelectorAll("body *")].filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.right>innerWidth+1&&getComputedStyle(el).position!=="fixed";}).slice(0,15).map(el=>({tag:el.tagName,cls:el.className,width:el.getBoundingClientRect().width,right:el.getBoundingClientRect().right,text:el.textContent.slice(0,50)}))')
+                assert page.evaluate('() => document.documentElement.scrollWidth<=innerWidth'), 'Mobile page overflow: '+json.dumps(overflow)
                 page.screenshot(path=str(output/'analytics-mobile.png'),full_page=True)
                 assert not errors,errors
                 browser.close()
