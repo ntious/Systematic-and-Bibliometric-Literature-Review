@@ -61,3 +61,6 @@ include mkdocs.yml
 exclude export_endnotes.xml export_sis.ris export*.bib export*.bibtex export*.sis
 
 exclude export_word.xml
+
+include Docs/Reporting_Guide.md
+global-exclude report-inputs.json report-provenance.json prisma-coverage.json

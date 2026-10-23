@@ -126,3 +126,8 @@ metric-sources.md
 /export*.sis
 
 /export_word.xml
+
+# Frozen reporting bundles contain private ledger data
+report-inputs.json
+report-provenance.json
+prisma-coverage.json
