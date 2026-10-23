@@ -59,3 +59,5 @@ include mkdocs.yml
 
 # User-supplied reference libraries are private validation inputs
 exclude export_endnotes.xml export_sis.ris export*.bib export*.bibtex export*.sis
+
+exclude export_word.xml

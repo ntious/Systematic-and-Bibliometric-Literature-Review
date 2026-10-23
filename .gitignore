@@ -124,3 +124,5 @@ metric-sources.md
 /export*.bib
 /export*.bibtex
 /export*.sis
+
+/export_word.xml
