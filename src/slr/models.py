@@ -33,16 +33,30 @@ class Record:
     references: list[str] = field(default_factory=list)
     reference_count: int | None = None
 
+    venue_id: str = ""
+    issns: list[str] = field(default_factory=list)
+    publisher: str = ""
+    affiliations: list[str] = field(default_factory=list)
+    affiliation_ids: list[str] = field(default_factory=list)
+    countries: list[str] = field(default_factory=list)
+    subject_areas: list[str] = field(default_factory=list)
+    subject_taxonomy: str = ""
+
     def __post_init__(self):
         self.doi = normalize_doi(self.doi)
         self.title = plain_text(self.title)
         self.abstract = plain_text(self.abstract)
-        for name in ('authors', 'author_ids', 'keywords', 'references'):
+        for name in ('authors', 'author_ids', 'keywords', 'references', 'issns', 'affiliations', 'affiliation_ids', 'countries', 'subject_areas'):
             value = getattr(self, name)
             if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
                 raise ValueError(f'{name} must be an array of strings')
         if self.author_ids and len(self.author_ids) != len(self.authors):
             raise ValueError('author_ids must align with authors (use empty strings for unknown IDs)')
+        if self.affiliation_ids and len(self.affiliation_ids) != len(self.affiliations):
+            raise ValueError('affiliation_ids must align with affiliations')
+        for name in ('venue_id', 'publisher', 'subject_taxonomy'):
+            if not isinstance(getattr(self, name), str):
+                raise ValueError(f'{name} must be a string')
         if self.reference_count is not None and (type(self.reference_count) is not int or self.reference_count < 0):
             raise ValueError('reference_count must be a nonnegative integer or null')
         if not self.provenance:

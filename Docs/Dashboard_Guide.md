@@ -1,4 +1,4 @@
-# LitAtlas dashboard (0.5.0)
+# LitAtlas dashboard (0.6.0)
 
 LitAtlas puts the repository's retrieval, screening, bibliometrics and evidence workflows in a modern local interface. The interface calls the same Python services as the CLI; it does not replace their validation rules.
 
@@ -105,3 +105,7 @@ python Scripts/check_dashboard_browser.py --output outputs/dashboard-qa
 ```
 
 On Linux, install the browser's documented system dependencies if they are not already available. The browser check exercises navigation, filters, study drawer, map inspection/zoom, conflict resolution, independent evidence approval, grounding blocks, ZIP/CSV downloads, command palette, theme, new review/import, screening, and mobile navigation. It uses synthetic data, makes no public-database or model requests, and writes screenshots to the requested QA directory. The ordinary test suite additionally checks local request controls, stale ledgers, corpus persistence and atomic retrieval completion/failure.
+
+### Research analytics
+
+The **Research analytics** view adds eight corpus summary measures and publication-venue rankings. Choose all captured reports or the included subset, search venues, import a dated metric CSV, and select metric year/category. Imported CiteScore/SNIP/SJR/quartiles/source H-indices remain separate from corpus TP counts. Export complete ranked tables and input/provenance snapshots. See [Corpus_Analytics_Guide.md](Corpus_Analytics_Guide.md) for definitions, metadata coverage, CSV schema and missing-value handling.

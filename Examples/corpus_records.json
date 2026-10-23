@@ -1,0 +1,129 @@
+[
+  {
+    "source": "synthetic",
+    "source_id": "example-1",
+    "title": "Synthetic study one",
+    "doi": "",
+    "abstract": "",
+    "authors": [
+      "Alice Example"
+    ],
+    "year": 2024,
+    "journal": "Example Journal A",
+    "citations": 5,
+    "url": "",
+    "provenance": [
+      {
+        "source": "synthetic",
+        "source_id": "example-1"
+      }
+    ],
+    "author_ids": [
+      "example:author-a"
+    ],
+    "keywords": [
+      "Learning",
+      "Artificial intelligence"
+    ],
+    "references": [],
+    "reference_count": null,
+    "venue_id": "example:venue-a",
+    "issns": [
+      "1234-5679"
+    ],
+    "publisher": "",
+    "affiliations": [
+      "Fictional University A"
+    ],
+    "affiliation_ids": [
+      "example:institution-a"
+    ],
+    "countries": [
+      "US"
+    ],
+    "subject_areas": [
+      "Computing"
+    ],
+    "subject_taxonomy": "Example taxonomy"
+  },
+  {
+    "source": "synthetic",
+    "source_id": "example-2",
+    "title": "Synthetic study two",
+    "doi": "",
+    "abstract": "",
+    "authors": [
+      "Alice Example",
+      "Bob Example"
+    ],
+    "year": 2025,
+    "journal": "Example Journal A",
+    "citations": 0,
+    "url": "",
+    "provenance": [
+      {
+        "source": "synthetic",
+        "source_id": "example-2"
+      }
+    ],
+    "author_ids": [
+      "example:author-a",
+      "example:author-b"
+    ],
+    "keywords": [
+      "Learning"
+    ],
+    "references": [],
+    "reference_count": null,
+    "venue_id": "",
+    "issns": [
+      "1234-5679"
+    ],
+    "publisher": "",
+    "affiliations": [
+      "Fictional University A"
+    ],
+    "affiliation_ids": [
+      "example:institution-a"
+    ],
+    "countries": [
+      "GB"
+    ],
+    "subject_areas": [
+      "Computing"
+    ],
+    "subject_taxonomy": "Example taxonomy"
+  },
+  {
+    "source": "synthetic",
+    "source_id": "example-3",
+    "title": "Synthetic study three",
+    "doi": "",
+    "abstract": "",
+    "authors": [
+      "Carol Example"
+    ],
+    "year": 2025,
+    "journal": "Example Journal B",
+    "citations": null,
+    "url": "",
+    "provenance": [
+      {
+        "source": "synthetic",
+        "source_id": "example-3"
+      }
+    ],
+    "author_ids": [],
+    "keywords": [],
+    "references": [],
+    "reference_count": null,
+    "venue_id": "",
+    "issns": [],
+    "publisher": "",
+    "affiliations": [],
+    "affiliation_ids": [],
+    "countries": [],
+    "subject_areas": [],
+    "subject_taxonomy": ""
+  }
+]

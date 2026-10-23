@@ -49,7 +49,7 @@ def parse_pubmed(xml):
         match = re.search(r'\b(\d{4})\b', date)
         doi = next((a.text or '' for a in item.findall('.//ArticleId') if a.get('IdType') == 'doi'), '')
         records.append(Record(source='pubmed', source_id=pmid, title=_text(article, 'ArticleTitle') or _text(article, 'Book/BookTitle'),
-            doi=doi, author_ids=author_ids, keywords=keywords, references=references, abstract=' '.join(abstracts), authors=authors, year=int(match.group(1)) if match else None,
+            doi=doi, affiliations=sorted({''.join(a.itertext()).strip() for a in article.findall('AuthorList/Author/AffiliationInfo/Affiliation') if ''.join(a.itertext()).strip()}), author_ids=author_ids, keywords=keywords, references=references, abstract=' '.join(abstracts), authors=authors, year=int(match.group(1)) if match else None,
             journal=_text(article, 'Book/BookTitle' if book else 'Journal/Title'), url=f'https://pubmed.ncbi.nlm.nih.gov/{pmid}/'))
     return records
 

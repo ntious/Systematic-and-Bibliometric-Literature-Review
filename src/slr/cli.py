@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sys
 import tomllib
+from . import __version__
 from .models import Record
 from .reporting import write_json, write_results
 from .search import SearchError, search
@@ -61,7 +62,7 @@ def run(config_path, output, fixture=None):
         write_results(folder, records)
         manifest = {"status": "complete", "mode": "offline-fixture" if fixture else "live", "started_utc": started,
                     "finished_utc": datetime.now(timezone.utc).isoformat(), "config": recorded, "searches": logs,
-                    "version": "0.5.0", "files": {p.name: sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir())}}
+                    "version": __version__, "files": {p.name: sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir())}}
         write_json(folder / "manifest.json", manifest)
     except Exception:
         write_json(folder / "manifest.json", {"status": "failed", "started_utc": started, "config": recorded, "searches": logs})
@@ -93,6 +94,7 @@ def main(argv=None):
         from .protocol import main as protocol_main
         return protocol_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__, epilog="Also available: slr protocol --help; slr pipeline --help; slr review --help; slr import --help; slr analyze --help; slr evidence --help; slr dashboard --help")
+    parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--output", required=True, help="New output directory; existing directories are never overwritten")
     parser.add_argument("--fixture", help="Offline normalized-record JSON; skips API retrieval and filters")

@@ -12,6 +12,23 @@ from playwright.sync_api import sync_playwright, expect
 from slr.dashboard import DashboardServer, Workspace
 
 
+
+def check_text_contrast(page):
+    """Check representative text in its rendered theme; not a complete WCAG audit."""
+    results=page.locator('.metric-label,.metric-bottom,.card-subtitle,.pill').evaluate_all(r"""elements => {
+      const rgba = color => (color.match(/[\d.]+/g) || []).map(Number);
+      const luminance = rgb => rgb.slice(0,3).map(v => {v/=255; return v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4;}).reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0);
+      return elements.filter(el=>el.getClientRects().length).map(el=>{
+        const color=rgba(getComputedStyle(el).color); let node=el,bg;
+        while(node){const value=rgba(getComputedStyle(node).backgroundColor);if(value.length>=3&&(value.length===3||value[3]===1)){bg=value;break;}node=node.parentElement;}
+        bg=bg||[255,255,255]; const a=luminance(color),b=luminance(bg);
+        return {text:el.textContent.trim().slice(0,80),ratio:(Math.max(a,b)+0.05)/(Math.min(a,b)+0.05)};
+      });
+    }""")
+    failures=[r for r in results if r['ratio']<4.5]
+    assert not failures, 'Rendered text contrast below 4.5:1: '+json.dumps(failures)
+    return results
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', default='outputs/dashboard-qa')
@@ -35,9 +52,23 @@ def main():
                 expect(page.locator('.metric-value').first).to_have_text('72')
                 expect(page.locator('#demo-banner')).to_be_visible()
                 expect(page.locator('#overview-graph .graph-node').first).to_be_visible()
+                contrast={'light':check_text_contrast(page)}
+                page.locator('#theme-toggle').click()
+                contrast['dark']=check_text_contrast(page)
+                page.locator('#theme-toggle').click()
+                (output/'targeted-contrast.json').write_text(json.dumps(contrast,indent=2))
                 page.screenshot(path=str(output/'overview.png'), full_page=True)
 
+                held=[]
+                page.route('**/api/state?*', lambda route: held.append(route))
                 page.locator('a.nav-item').filter(has_text='Study library').click()
+                expect(page.locator('#main')).to_have_attribute('aria-busy','true')
+                expect(page.locator('a.nav-item.active')).to_contain_text('Study library')
+                assert page.locator('#main').evaluate('(el) => getComputedStyle(el).pointerEvents')=='none'
+                assert held, 'Expected a delayed state request'
+                for request in held:request.continue_()
+                page.unroute('**/api/state?*')
+                expect(page.locator('#main')).not_to_have_attribute('aria-busy','true')
                 page.locator('#library-search').fill('trust')
                 expect(page.locator('tbody tr')).to_have_count(5)
                 page.locator('.paper-title').first.click()
@@ -68,6 +99,23 @@ def main():
 
                 page.locator('a.nav-item').filter(has_text='Screening').click()
                 expect(page.locator('.reading-title')).to_be_visible()
+                expect(page.locator('.page-heading')).to_have_class('page-heading compact')
+                page.set_viewport_size({'width':1280,'height':720})
+                for control in ['include','exclude']:
+                    box=page.locator('[data-action="'+control+'"]').bounding_box()
+                    assert box and 0<=box['y'] and box['y']+box['height']<=720, 'Desktop decision controls must be visible'
+                page.screenshot(path=str(output/'screening-1280x720.png'),full_page=True)
+                page.set_viewport_size({'width':375,'height':812})
+                assert page.locator('.decision-bar').evaluate('(el) => getComputedStyle(el).position')=='fixed'
+                for control in ['include','exclude']:
+                    box=page.locator('[data-action="'+control+'"]').bounding_box()
+                    assert box and 0<=box['y'] and box['y']+box['height']<=812, 'Mobile decision controls must be visible'
+                page.screenshot(path=str(output/'screening-375.png'),full_page=True)
+                page.set_viewport_size({'width':1440,'height':1020})
+                page.locator('a.nav-item').filter(has_text='Evidence studio').click()
+                expect(page.locator('.page-heading').get_by_role('button',name='Add source text',exact=True)).to_be_disabled()
+                expect(page.locator('.page-heading').get_by_role('button',name='Add source text',exact=True)).to_have_attribute('title','Available after paired screening, full-text eligibility and study linking are complete')
+                page.locator('a.nav-item').filter(has_text='Screening').click()
                 page.locator('[data-mode="conflicts"]').click()
                 page.locator('#actor-select').select_option('Riley')
                 expect(page.locator('.queue-item')).to_have_count(4)
@@ -98,6 +146,15 @@ def main():
                 with zipfile.ZipFile(archive_path) as archive:
                     assert 'screening/prisma.svg' in archive.namelist()
                     assert 'evidence/evidence.csv' in archive.namelist()
+
+                saved_ledger=workspace.entry(second)['evidence_db']
+                workspace.update(second,evidence_db=None)
+                page.reload(wait_until='networkidle')
+                expect(page.locator('.page-heading [data-action="init-evidence"]')).to_be_enabled()
+                expect(page.locator('.page-heading [data-action="init-evidence"]')).to_have_text('Start evidence review')
+                workspace.update(second,evidence_db=saved_ledger)
+                page.reload(wait_until='networkidle')
+                expect(page.locator('.page-heading [data-action="add-source"]')).to_be_enabled()
 
                 page.keyboard.press('Control+k')
                 page.locator('#palette-input').fill('protocol')

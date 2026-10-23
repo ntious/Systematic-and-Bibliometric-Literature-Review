@@ -317,6 +317,129 @@ class Workspace:
                 return {'proposal_ids': evidence.import_ai(db, body['envelope'])}
             raise ValueError('Unknown evidence action')
 
+    def import_venue_metrics(self, identifier, body):
+        from .corpus import parse_venue_metrics
+        with self.lock:
+            self.entry(identifier)
+            name = body.get('name', '')
+            if not isinstance(name,str) or Path(name).suffix.lower() != '.csv':
+                raise ValueError('Choose a venue-metrics CSV file')
+            raw = base64.b64decode(body.get('base64',''), validate=True)
+            if len(raw)>5*1024*1024:
+                raise ValueError('Venue-metrics CSV exceeds 5 MB')
+            text=raw.decode('utf-8-sig')
+            if body.get('format')=='scimago':
+                from .venue_metrics import scimago_snapshot
+                text=scimago_snapshot(text,body.get('year'),body.get('retrieved_date',''))
+                normalized=text.encode('utf-8')
+            else:normalized=raw
+            rows = parse_venue_metrics(text)
+            folder = self.root / ('venue-metrics-' + uuid4().hex)
+            folder.mkdir()
+            (folder/'input.csv').write_bytes(normalized)
+            if body.get('format')=='scimago':(folder/'scimago-original.csv').write_bytes(raw)
+            write_json(folder/'rows.json',rows)
+            write_json(folder/'manifest.json',{'mode':'external-venue-metrics','original_name':Path(name).name,'imported_utc':timestamp(),
+                'files':{p.name:sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir())}})
+            self.update(identifier,venue_metrics=str(folder))
+            return {'rows':len(rows),'years':sorted({r['year'] for r in rows})}
+
+    def fetch_venue_metrics(self, identifier, body):
+        from .venue_metrics import PROVIDERS
+        from datetime import date
+        provider,year=body.get('provider'),body.get('year')
+        limit=body.get('limit',10)
+        if provider not in PROVIDERS:raise ValueError('Choose Elsevier or Clarivate')
+        if type(year) is not int or not 1997<=year<=date.today().year:raise ValueError('Invalid metric year')
+        if type(limit) is not int or not 1<=limit<=100:raise ValueError('Choose 1–100 top venues')
+        with self.lock:
+            self.entry(identifier)
+            if any(j.get('review_id')==identifier and j['status']=='running' for j in self.jobs.values()):
+                raise ValueError('Wait for the running review job')
+            venues=self.corpus_analysis(identifier,scope=body.get('scope','all'))['venues'][:limit]
+            from .pipeline import SessionJournal
+            folder=self.root/('venue-metrics-'+uuid4().hex)
+            journal=SessionJournal(folder,{'operation':'venue metrics','provider':provider,'year':year,'venues':len(venues)})
+            job_id=uuid4().hex
+            job={'id':job_id,'review_id':identifier,'status':'running','stage':'venue metrics',
+                 'started_utc':timestamp(),'session_report':str(folder/'SESSION.md'),'kind':'venue-metrics'}
+            self.jobs[job_id]=job;self._save_jobs()
+            def execute():
+                from .venue_metrics import retrieve,csv_snapshot
+                try:
+                    rows,audit=retrieve(venues,provider,year)
+                    write_json(folder/'lookup-audit.json',audit)
+                    for item in audit:
+                        if item['status']!='retrieved':
+                            journal.record('venue lookup','warning',item['venue']+': '+item.get('reason','No usable data returned'),
+                                evidence='lookup-audit.json',remedy='Check provider access, ISSNs and year; use an authorized provider export where available.')
+                    if not rows:raise ValueError('No usable metrics returned; previous snapshot preserved. See session log.')
+                    raw=csv_snapshot(rows).encode('utf-8')
+                    result=self.import_venue_metrics(identifier,{'name':provider+'-'+str(year)+'.csv','base64':base64.b64encode(raw).decode()})
+                    journal.data['status']='partial' if any(i['status']!='retrieved' for i in audit) else 'complete'
+                    journal.record('metrics snapshot','info',str(len(rows))+' provider rows saved with source links',evidence='lookup-audit.json')
+                    with self.lock:
+                        job.update(status='complete',outcome=journal.data['status'],finished_utc=timestamp(),rows=result['rows'])
+                        self._save_jobs()
+                except Exception as exc:
+                    message=str(exc) if isinstance(exc,ValueError) else 'Venue metric retrieval failed; inspect provider access and retry'
+                    journal.data['status']='failed'
+                    journal.record('venue metrics','error',message,remedy='Configure the server API key and approved provider access, or import the provider CSV. Existing metrics are preserved.')
+                    with self.lock:
+                        job.update(status='failed',error=message,finished_utc=timestamp());self._save_jobs()
+            self.executor.submit(execute)
+            return dict(job)
+
+    def corpus_analysis(self, identifier, *, scope='all', year=None, category=None, include_input=False):
+        from .corpus import corpus_summary, parse_venue_metrics
+        if scope not in ('all','included'):
+            raise ValueError('Choose all or included report scope')
+        entry=self.entry(identifier)
+        state=screening.snapshot(entry['screening_db'])
+        records=[Record(**r['metadata']) for r in state['records'] if scope=='all' or r['fulltext']=='include']
+        metrics=[]; origin=None
+        if entry.get('venue_metrics'):
+            folder=Path(entry['venue_metrics'])
+            manifest=json.loads((folder/'manifest.json').read_text())
+            for name in manifest['files']:
+                if sha256((folder/name).read_bytes()).hexdigest()!=manifest['files'].get(name):
+                    raise ValueError('External venue-metrics snapshot hash mismatch')
+            metrics=parse_venue_metrics((folder/'input.csv').read_text(encoding='utf-8-sig'))
+            origin={'filename':manifest['original_name'],'imported_utc':manifest['imported_utc'],'sha256':manifest['files']['input.csv'],'rows':len(metrics)}
+        report=corpus_summary(records,metrics,year=year,category=category)
+        report.update(screening_complete=state['prisma']['complete'],scope=scope,review_id=state['review_id'],criteria_version=state['criteria_version'],metric_import=origin)
+        if include_input:
+            report['_input_records']=[r.to_dict() for r in records]
+            report['_metric_folder']=entry.get('venue_metrics')
+        return report
+
+    def export_corpus(self, identifier, **options):
+        from .corpus import export_corpus
+        report=self.corpus_analysis(identifier,include_input=True,**options)
+        inputs=report.pop('_input_records')
+        metric_folder=report.pop('_metric_folder')
+        folder=self.root / ('corpus-export-' + uuid4().hex)
+        folder.mkdir()
+        export_corpus(report,folder)
+        write_json(folder/'input-records.json',inputs)
+        if metric_folder:
+            raw=(Path(metric_folder)/'input.csv').read_bytes()
+            if sha256(raw).hexdigest()!=report['metric_import']['sha256']:
+                raise ValueError('External metrics changed during export')
+            (folder/'external-venue-metrics.csv').write_bytes(raw)
+            original=Path(metric_folder)/'scimago-original.csv'
+            if original.exists():
+                metric_manifest=json.loads((Path(metric_folder)/'manifest.json').read_text())
+                original_bytes=original.read_bytes()
+                if sha256(original_bytes).hexdigest()!=metric_manifest['files'].get(original.name):raise ValueError('SCImago original hash mismatch')
+                (folder/original.name).write_bytes(original_bytes)
+        write_json(folder/'manifest.json',{'scope':report['scope'],'review_id':report['review_id'],'created_utc':timestamp(),
+            'files':{p.name:sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir())}})
+        data=io.BytesIO()
+        with zipfile.ZipFile(data,'w',zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(folder.iterdir()):archive.write(path,path.name)
+        return data.getvalue()
+
     def export(self, identifier):
         entry = self.entry(identifier)
         folder = self.root / ('export-' + uuid4().hex)
@@ -398,6 +521,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, job)
             identifier = query.get('review', [''])[0]
             entry = self.server.workspace.entry(identifier)
+            if path in ('/api/corpus','/api/corpus-export'):
+                options={'scope':query.get('scope',['all'])[0], 'year':int(query['year'][0]) if query.get('year',[''])[0] else None, 'category':query.get('category',[''])[0] or None}
+                if path == '/api/corpus-export':
+                    return self.send(200,self.server.workspace.export_corpus(identifier,**options),'application/zip',download='corpus-analysis.zip')
+                return self.send(200,self.server.workspace.corpus_analysis(identifier,**options))
             if path == '/api/state':
                 return self.send(200, self.server.workspace.state(identifier))
             if path == '/api/queue':
@@ -435,8 +563,12 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/create':
                 return self.send(200, workspace.create(body))
             identifier = body.get('review_id')
-            if path in ('/api/import', '/api/search', '/api/screening', '/api/evidence'):
+            if path in ('/api/import', '/api/search', '/api/screening', '/api/evidence', '/api/venue-metrics', '/api/venue-metrics-fetch'):
                 workspace.guard_ledger(identifier, body)
+            if path == '/api/venue-metrics-fetch':
+                return self.send(200,workspace.fetch_venue_metrics(identifier,body))
+            if path == '/api/venue-metrics':
+                return self.send(200,workspace.import_venue_metrics(identifier,body))
             if path == '/api/import':
                 return self.send(200, workspace.import_uploads(identifier, body))
             if path == '/api/search':
