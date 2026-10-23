@@ -13,3 +13,11 @@
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .network-corner,.network-controls{z-index:2}.metadata-cell{min-width:0;overflow-wrap:anywhere}
+
+/* Corpus analytics: local additions preserve the existing navigation and theme styles. */
+.corpus-metrics{margin-bottom:20px}.corpus-stat-note{font-size:11px;line-height:1.6;color:var(--muted);min-height:34px}.corpus-coverage{font-size:10px;color:var(--muted);margin-top:12px}.corpus-venue-card{min-width:0}.corpus-table-toolbar{padding:14px 22px;margin:0;display:flex;gap:12px}.corpus-table-toolbar input{flex:1;min-width:100px;max-width:460px}.corpus-table-wrap{overflow-x:auto;max-width:100%}.corpus-venue-table{width:100%;min-width:1150px;border-collapse:collapse;font-size:11px}.corpus-venue-table th{text-align:left;background:var(--surface-alt);color:var(--muted);font-size:10px;font-weight:600;padding:13px 14px;white-space:nowrap}.corpus-venue-table td{padding:15px 14px;border-top:1px solid var(--line);vertical-align:top}.corpus-venue-table td:nth-child(2){min-width:210px;max-width:310px}.corpus-venue-table small{display:block;font-size:10px;color:var(--muted);margin-top:5px;line-height:1.5}.corpus-methods{margin-top:18px}.corpus-methods summary{cursor:pointer;padding:20px 22px;font-size:12px;font-weight:600}.corpus-methods .card-body{padding-top:0}@media(max-width:700px){.corpus-table-toolbar{padding:12px;flex-wrap:wrap}.corpus-table-toolbar input{width:100%}.corpus-metrics .metric-value{font-size:26px}}
+
+.corpus-analysis-controls .toolbar-group{display:flex;flex-wrap:wrap;min-width:0;gap:10px}.corpus-analysis-controls select{max-width:100%}
+
+/* Analytics actions and provenance remain readable on narrow screens. */
+.heading-actions{flex-wrap:wrap;max-width:100%}.corpus-venue-card .detail-caption{overflow-wrap:anywhere}

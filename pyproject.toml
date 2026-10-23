@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "slr-workbench"
-version = "0.5.0"
-description = "Reproducible literature retrieval, screening, bibliometrics, and evidence review"
+version = "0.6.0"
+description = "LitAtlas: local literature retrieval, screening, bibliometrics, and evidence review"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-only"
@@ -15,7 +15,13 @@ dependencies = []
 [project.optional-dependencies]
 ui-test = ["playwright>=1.50,<2"]
 analysis = ["matplotlib>=3.8,<4"]
-dev = ["pytest>=8,<10", "build>=1,<2"]
+dev = ["pytest>=8,<10", "build>=1,<2", "twine>=6,<7"]
+docs = ["mkdocs>=1.6,<2"]
+
+[project.urls]
+Homepage = "https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review"
+Documentation = "https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review/blob/main/README.md"
+Issues = "https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review/issues"
 
 [project.scripts]
 slr = "slr.cli:main"

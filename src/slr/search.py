@@ -62,7 +62,21 @@ def openalex_record(item):
     inverted = item.get("abstract_inverted_index") or {}
     words = sorted((position, word) for word, positions in inverted.items() for position in positions)
     location = item.get("primary_location") or {}
+    source = location.get('source') or {}
+    institutions = {}
+    for authorship in item.get('authorships', []):
+        for institution in authorship.get('institutions') or []:
+            identifier = institution.get('ror') or institution.get('id') or institution.get('display_name') or ''
+            if identifier:
+                institutions[identifier] = institution
     return Record(source="openalex", source_id=item["id"],
+                  venue_id=source.get('id') or '', issns=sorted(set(([source['issn_l']] if source.get('issn_l') else []) + (source.get('issn') or []))),
+                  publisher=source.get('host_organization_name') or '',
+                  affiliations=[i.get('display_name') or key for key,i in institutions.items()],
+                  affiliation_ids=[i.get('ror') or i.get('id') or '' for i in institutions.values()],
+                  countries=sorted({i['country_code'] for i in institutions.values() if i.get('country_code')}),
+                  subject_areas=sorted({t['field']['display_name'] for t in item.get('topics', []) if (t.get('field') or {}).get('display_name')}),
+                  subject_taxonomy='OpenAlex fields',
                   title=item.get("display_name") or "", doi=item.get("doi"),
                   provenance=[{"source":"openalex", "source_id":item["id"], "publication_date":item.get("publication_date") or ""}],
                   abstract=" ".join(word for _, word in words),
@@ -78,8 +92,11 @@ def openalex_record(item):
 def crossref_record(item):
     parts = (item.get("published") or item.get("issued") or {}).get("date-parts", [[]])
     reported_date = "-".join(str(v) if i == 0 else f"{v:02d}" for i,v in enumerate(parts[0])) if parts and parts[0] else ""
+    affiliations = sorted({a['name'] for author in item.get('author', []) for a in author.get('affiliation', []) if a.get('name')})
     return Record(source="crossref", source_id=item.get("DOI", ""),
                   provenance=[{"source":"crossref", "source_id":item.get("DOI", ""), "publication_date":reported_date}],
+                  issns=item.get('ISSN') or [], publisher=item.get('publisher') or '', affiliations=affiliations,
+                  subject_areas=item.get('subject') or [], subject_taxonomy='Crossref reported subjects',
                   title=next(iter(item.get("title") or []), ""), doi=item.get("DOI"),
                   abstract=item.get("abstract") or "",
                   authors=[" ".join(filter(None, [a.get("given"), a.get("family")])) or a.get("name", "")

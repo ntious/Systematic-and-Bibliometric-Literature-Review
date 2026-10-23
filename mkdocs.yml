@@ -1,0 +1,22 @@
+site_name: LitAtlas
+site_description: Local software for systematic and bibliometric literature reviews
+repo_url: https://github.com/ntious/Systematic-and-Bibliometric-Literature-Review
+docs_dir: outputs/docs-source
+site_dir: outputs/docs-site
+theme:
+  name: mkdocs
+nav:
+  - Home: index.md
+  - Installation: Docs/Installation_Guide.md
+  - Dashboard: Docs/Dashboard_Guide.md
+  - Screening and agreement: Docs/Screening_Guide.md
+  - Protocol: Docs/Protocol_Guide.md
+  - Pipeline: Docs/Pipeline_Guide.md
+  - Bibliometrics: Docs/Bibliometrics_Guide.md
+  - Corpus analytics: Docs/Corpus_Analytics_Guide.md
+  - Evidence: Docs/Evidence_Guide.md
+  - Data policy: Docs/Local_Data_Policy.md
+  - Roadmap: Docs/Implementation_Roadmap.md
+  - Releases: Docs/Release_Guide.md
+  - Changelog: CHANGELOG.md
+  - Contributing: CONTRIBUTING.md

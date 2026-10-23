@@ -78,3 +78,13 @@ Scope: a trusted local application, not authenticated internet hosting. Credenti
 - Private research/session paths excluded from Git and release archives; generic examples and source remain publishable candidates.
 
 Scope: automated diagnostics do not replace independent human screening, relevance validation or research appraisal. Real data and practical error registers remain local unless deliberately reviewed for sharing.
+
+## Corpus analytics increment
+
+- Eight covered-corpus measures: papers, observed author identities, venues, observed affiliations, unique keywords, taxonomy-aware subject areas, available citations and affiliation countries.
+- Richer provider/import metadata with preserved missingness and compatibility with earlier snapshots.
+- Ranked venues with cross-provider venue-ID/ISSN evidence, top-ten display, search and all/included scope selection.
+- Dated external journal-metric snapshots with explicit identity matching, provider/year/category provenance, unresolved ambiguity and missing versus not-applicable status.
+- Complete CSV/JSON/input-snapshot exports, static HTML tables and desktop/mobile browser checks.
+
+Scope: identity/name metadata remains imperfect; citations reflect provider snapshots. External journal metrics are imported, not inferred from the review corpus. Older snapshots are not silently enriched or rewritten.

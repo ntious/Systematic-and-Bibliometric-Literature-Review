@@ -1,8 +1,22 @@
-# Systematic and Bibliometric Literature Review
+# LitAtlas — Systematic and Bibliometric Literature Review
 
-The workbench now supports retrieval, licensed-export imports, two-reviewer screening, full-text eligibility, adjudication, study-selection exports, and reproducible bibliometric networks.
+LitAtlas is a local research workbench for literature retrieval, import, independent screening, protocol amendments, reviewer agreement, bibliometrics and source-grounded evidence review. Python 3.11+; no required third-party runtime dependencies.
 
 Workshop resources and a reproducible Python foundation for literature retrieval and review preparation.
+
+## Install the release candidate
+
+Version **0.6.0** is being prepared for release. Until a PyPI release is published, install the wheel from the GitHub Release assets:
+
+```bash
+pipx install ./slr_workbench-0.6.0-py3-none-any.whl
+slr --version
+slr dashboard --workspace ~/litatlas-workspace --demo
+```
+
+Install [pipx](https://pipx.pypa.io/stable/installation/) first, or use a Python virtual environment and `python -m pip install PATH_TO_WHEEL`. On Windows, replace `~/litatlas-workspace` with a directory you own, for example `C:/Users/YOUR_NAME/LitAtlas`. After publication, `pipx install slr-workbench` will be available. The core dashboard runs offline; live searches and optional providers require network access. Keep a backup of the complete workspace folder.
+
+See [Installation](Docs/Installation_Guide.md), [release preparation](Docs/Release_Guide.md) and [CHANGELOG](CHANGELOG.md). This is a trusted local workflow: reviewer labels are not authenticated user accounts.
 
 ## Open the interactive dashboard
 
@@ -67,11 +81,11 @@ A failed run is marked as failed and must not be used as a completed search. Pre
 
 Search syntax is interpreted by each provider: Crossref free-text search is not a portable Boolean search engine. Test source-specific queries with a librarian and retain your review protocol separately. Publication date coverage and citation counts differ across databases. OpenAlex and Crossref do not replace licensed Scopus or Web of Science searches.
 
-Deduplication compares normalized DOIs only. It keeps the first record and merges source identifiers into its provenance; alternate metadata remains in raw pages and `retrieved.json`. Records without valid DOIs remain separate even when titles match. Review them manually. Citation counts remain provider-specific, and missing citation data stays missing.
+Deduplication uses the implemented DOI and source-identity rules, recorded in each run’s outputs. It keeps alternate provenance; raw pages and `retrieved.json` retain captured metadata. Similar titles alone do not establish that two reports are the same study. Review uncertain duplicates manually. Citation counts remain provider-specific, and missing citation data stays missing.
 
 The offline fixture contains synthetic records and bypasses API search and date filters. Its manifest explicitly identifies fixture mode. The sample configuration caps retrieval; inspect the `truncated` flags before treating a live search as exhaustive. APIs change over time, so saved raw responses are necessary for inspection and later reprocessing.
 
-Identification counts describe review preparation. They are **not a complete PRISMA flow diagram** and do not imply that screening or eligibility assessment occurred. Human screening, dual-reviewer conflict resolution, full-text eligibility, PubMed retrieval, and PRISMA-style selection exports are available through the commands below. Bibliometric networks and coverage-aware summaries are available through `slr analyze`. Source-anchored extraction, configurable study appraisal, human-reviewed evidence digests and optional AI proposals are available through `slr evidence`. A dashboard remains a future milestone. No AI-generated research claims are produced by this package.
+Identification counts describe review preparation. They are **not a complete PRISMA flow diagram** and do not imply that screening or eligibility assessment occurred. Human screening, dual-reviewer conflict resolution, full-text eligibility, PubMed retrieval, and PRISMA-style selection exports are available through the commands below. Bibliometric networks and coverage-aware summaries are available through `slr analyze`. Source-anchored extraction, configurable study appraisal, human-reviewed evidence digests and optional AI proposals are available through `slr evidence`. The local dashboard exposes these workflows; AI proposals require explicit human review before approval.
 
 ## Screen and assess eligibility
 
@@ -165,7 +179,7 @@ python -m pytest
 python -m build
 ```
 
-CI tests Python 3.11–3.13, builds the distribution, and runs the offline example. Tests use mocked API responses and require no credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) and [the roadmap](Docs/Implementation_Roadmap.md).
+CI tests Python 3.11–3.13, runs both browser suites, builds and audits the distribution, checks documentation, and validates installation from built packages. Tests use mocked API responses and require no credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) and [the roadmap](Docs/Implementation_Roadmap.md).
 
 ## License and contact
 
@@ -176,3 +190,16 @@ Workshop contact: Dr. Nti, ntiik@ucmail.uc.edu, University of Cincinnati, USA.
 ### Practical research pipeline
 
 Run multi-query searches through the dashboard or `slr pipeline --plan PLAN.json --output NEW_DIRECTORY`. The application preserves per-session Markdown error/lesson reports and raw retrieval evidence. See [Pipeline guide](Docs/Pipeline_Guide.md) for usage; private practical-test logs remain local and ignored.
+
+### Corpus summaries and ranked venues
+
+LitAtlas's **Research analytics** view reports papers, observed authors/affiliations, publication venues, unique keywords, subject areas, available citations and affiliation countries with metadata coverage. A searchable top-venue table supports dated external CiteScore/SNIP/SJR/quartile/source H-index snapshots, category/year selection and complete CSV/JSON exports. See [Corpus analytics guide](Docs/Corpus_Analytics_Guide.md).
+
+
+## Protocols and reviewer agreement
+
+`slr protocol` checks a structured PRISMA-P draft, exports registry field drafts, and saves append-only amendments linked to criteria versions. Nothing is registered automatically. See [Protocol guide](Docs/Protocol_Guide.md).
+
+`slr review agreement` reports paired independent decisions, observed agreement, Cohen’s kappa and PABAK. Pilot calibration and undefined statistics are handled explicitly. Reviewer labels and the local database are not an access-control or blinding system. See [Screening guide](Docs/Screening_Guide.md).
+
+SCImago CSV import supplies SJR, category/best quartiles and captured journal H-index with source footnotes. Optional official Elsevier/Clarivate lookups require approved access and server credentials. Missing metrics remain missing. See [Corpus analytics](Docs/Corpus_Analytics_Guide.md).

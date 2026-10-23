@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 
+from . import __version__
 from .models import Record
 from .reporting import unsafe_cell, write_json, write_results
 
@@ -19,6 +20,9 @@ ALIASES = {
     'year': ('year', 'publication year'), 'journal': ('journal', 'source title', 'publication title'),
     'keywords': ('keywords', 'author keywords'), 'references': ('references', 'cited references'),
     'author_ids': ('author_ids',), 'reference_count': ('reference_count',),
+    'venue_id': ('venue_id', 'source id'), 'issns': ('issns', 'issn'), 'publisher': ('publisher',),
+    'affiliations': ('affiliations',), 'affiliation_ids': ('affiliation_ids',), 'countries': ('countries', 'country codes'),
+    'subject_areas': ('subject_areas', 'subject areas'), 'subject_taxonomy': ('subject_taxonomy', 'subject taxonomy'),
     'citations': ('citations', 'cited by', 'times cited, wos core'), 'url': ('url', 'link'),
 }
 
@@ -44,7 +48,7 @@ def _record(fields, source, index, digest):
     if not isinstance(authors, list) or not all(isinstance(a, str) for a in authors):
         raise ValueError(f'Invalid authors in record {index}')
     arrays = {}
-    for key in ('keywords', 'references', 'author_ids'):
+    for key in ('keywords', 'references', 'author_ids', 'issns', 'affiliations', 'affiliation_ids', 'countries', 'subject_areas'):
         value = fields.get(key, '')
         if isinstance(value, str):
             value = json.loads(value) if value.lstrip().startswith('[') else [v.strip() for v in value.split(';') if v.strip()]
@@ -52,7 +56,7 @@ def _record(fields, source, index, digest):
     identifier = fields.get('source_id') or f'{digest[:16]}:{index}'
     return Record(source=source, source_id=identifier, title=title, doi=fields.get('doi', ''),
         abstract=fields.get('abstract', ''), authors=authors, **arrays, reference_count=_number(fields.get('reference_count'), 'reference_count'), year=_number(fields.get('year'), 'year'),
-        journal=fields.get('journal', ''), citations=_number(fields.get('citations'), 'citations'), url=fields.get('url', ''),
+        journal=fields.get('journal', ''), venue_id=fields.get('venue_id', ''), publisher=fields.get('publisher', ''), subject_taxonomy=fields.get('subject_taxonomy', ''), citations=_number(fields.get('citations'), 'citations'), url=fields.get('url', ''),
         provenance=[{'source': source, 'source_id': identifier, 'file_sha256': digest, 'row': index}])
 
 
@@ -110,7 +114,7 @@ def parse_ris(text, source, digest):
         fields = {'title': first('TI', 'T1'), 'doi': first('DO'), 'source_id': first('ID', 'AN'),
                   'authors': entry.get('AU', entry.get('A1', [])), 'year': date[:4],
                   'keywords': entry.get('KW', []), 'references': entry.get('CR', []),
-                  'abstract': first('AB', 'N2'), 'journal': first('JO', 'JF', 'T2'), 'url': first('UR')}
+                  'issns': entry.get('SN', []), 'publisher': first('PB'), 'affiliations': entry.get('AD', []), 'abstract': first('AB', 'N2'), 'journal': first('JO', 'JF', 'T2'), 'url': first('UR')}
         records.append(_record(fields, source, index, digest))
     return records
 
@@ -152,7 +156,7 @@ def import_files(paths, output, source):
     write_results(folder, records)
     write_json(folder / 'manifest.json', {'status': 'complete', 'mode': 'import',
         'finished_utc': datetime.now(timezone.utc).isoformat(), 'inputs': inputs,
-        'searches': [], 'config': {}, 'version': '0.5.0',
+        'searches': [], 'config': {}, 'version': __version__,
         'files': {p.name: sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir())}})
     return folder
 

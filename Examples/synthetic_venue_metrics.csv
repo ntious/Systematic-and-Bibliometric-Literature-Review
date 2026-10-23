@@ -1,0 +1,5 @@
+journal,issn,venue_id,year,citescore,snip,sjr,quartile,category,publisher,h_index,metric_source,retrieved_date
+Example Journal A,1234-5679,,2024,4.5,1.1,0.7,Q2,Computing,Fictional Example Press,12,Fictional provider - SYNTHETIC EXAMPLE,2026-01-15
+Example Journal A,1234-5679,,2025,5.1,1.3,0.8,Q1,Computing,Fictional Example Press,14,Fictional provider - SYNTHETIC EXAMPLE,2026-01-15
+Example Journal A,1234-5679,,2025,5.1,1.3,0.8,Q3,Other category,Fictional Example Press,14,Fictional provider - SYNTHETIC EXAMPLE,2026-01-15
+Example Journal B,,,2025,*,*,0.2,,Computing,Fictional Example Publisher,0,Fictional provider - SYNTHETIC EXAMPLE,2026-01-15

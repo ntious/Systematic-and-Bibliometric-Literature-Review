@@ -103,3 +103,17 @@ reviewer_feedback.md
 
 # Machine-local launcher configuration
 .claude/
+
+# Corpus analytics and imported journal-metrics snapshots
+corpus-summary.json
+corpus-summary.csv
+publication-venues.csv
+venue-metrics-input.csv
+external-venue-metrics.csv
+input-records.json
+venue-metrics-*/
+corpus-export-*/
+
+# Local provider-download provenance
+scimago-original.csv
+metric-sources.md

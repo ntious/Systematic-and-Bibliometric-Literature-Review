@@ -40,3 +40,19 @@ include Docs/Protocol_Guide.md
 
 prune .claude
 exclude platform_enhancement_plan.md
+include Examples/corpus_records.json
+include Examples/synthetic_venue_metrics.csv
+include Scripts/check_corpus_browser.py
+global-exclude corpus-summary.json corpus-summary.csv publication-venues.csv venue-metrics-input.csv external-venue-metrics.csv input-records.json
+include Docs/Corpus_Analytics_Guide.md
+
+global-exclude scimago-original.csv metric-sources.md
+
+include CHANGELOG.md
+include CITATION.cff
+include Docs/Installation_Guide.md
+include Docs/Release_Guide.md
+include Scripts/check_distribution.py
+include Scripts/check_installed_package.py
+include Scripts/build_docs.py
+include mkdocs.yml
