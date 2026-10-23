@@ -45,7 +45,7 @@ def main():
         run(python, '-m', 'pip', 'check')
         installed = json.loads(run(python, '-I', '-c',
             'import json,slr;print(json.dumps([slr.__version__,slr.__file__]))'))
-        if installed[0] != expected or not Path(installed[1]).is_relative_to(envdir):
+        if installed[0] != expected or not Path(installed[1]).resolve().is_relative_to(envdir.resolve()):
             raise ValueError('Version mismatch or import leaked from source checkout')
         assert expected in run(command, '--version')
         for subcommand in ['dashboard', 'review', 'protocol', 'pipeline', 'import', 'analyze', 'evidence']:

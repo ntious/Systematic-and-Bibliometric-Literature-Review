@@ -52,6 +52,12 @@ jobs:
       - run: python -m build
       - run: python Scripts/check_distribution.py --dist dist
       - run: python Scripts/check_installed_package.py --dist dist
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: release-candidate-distributions
+          path: dist/
+          if-no-files-found: error
   docs:
     runs-on: ubuntu-latest
     steps:
