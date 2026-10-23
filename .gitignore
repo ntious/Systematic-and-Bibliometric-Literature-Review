@@ -117,3 +117,10 @@ corpus-export-*/
 # Local provider-download provenance
 scimago-original.csv
 metric-sources.md
+
+# Private reference-manager exports supplied for local import validation
+/export_endnotes.xml
+/export_sis.ris
+/export*.bib
+/export*.bibtex
+/export*.sis

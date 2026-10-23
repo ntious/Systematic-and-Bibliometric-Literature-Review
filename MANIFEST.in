@@ -56,3 +56,6 @@ include Scripts/check_distribution.py
 include Scripts/check_installed_package.py
 include Scripts/build_docs.py
 include mkdocs.yml
+
+# User-supplied reference libraries are private validation inputs
+exclude export_endnotes.xml export_sis.ris export*.bib export*.bibtex export*.sis
