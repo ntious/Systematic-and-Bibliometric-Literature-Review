@@ -1,3 +1,4 @@
+from conftest import defer_protocol
 import json
 from hashlib import sha256
 
@@ -64,6 +65,7 @@ def ledger(tmp_path):
     run('configs/example_review.toml', tmp_path / 'run', fixture)
     db = tmp_path / 'review.sqlite'
     assert s.initialize(db, tmp_path / 'run', 'Agreement review', ['alice', 'bob'], 'carol', 'Criteria') == 10
+    defer_protocol(db)
     return db
 
 
@@ -107,6 +109,7 @@ def test_exclusion_reason_agreement(ledger):
 def test_agreement_is_per_criteria_version(ledger):
     votes(ledger, [II, EE])
     s.revise_criteria(ledger, 'Revised criteria', expected_version=1)
+    defer_protocol(ledger)
     data = s.snapshot(ledger)['agreement']
     assert data['criteria_version'] == 2 and data['title']['pairs'] == 0
 
@@ -131,9 +134,11 @@ def test_pilot_is_reproducible_and_recorded(ledger, tmp_path):
 def test_same_seed_same_sample_and_default_seed_recorded(ledger, tmp_path):
     other = tmp_path / 'other.sqlite'
     s.initialize(other, tmp_path / 'run', 'Copy', ['alice', 'bob'], 'carol', 'Criteria')
+    defer_protocol(other)
     assert s.start_pilot(ledger, 'carol', 5, seed=42, expected_version=1) == s.start_pilot(other, 'carol', 5, seed=42, expected_version=1)
     third = tmp_path / 'third.sqlite'
     s.initialize(third, tmp_path / 'run', 'Default seed', ['alice', 'bob'], 'carol', 'Criteria')
+    defer_protocol(third)
     s.start_pilot(third, 'carol', 3, expected_version=1)
     data = s.snapshot(third)
     expected = int(sha256(f"{data['review_id']}:1".encode()).hexdigest()[:8], 16)
@@ -183,6 +188,7 @@ def test_pilot_gates_other_title_screening_until_both_finish(ledger):
 def test_new_criteria_version_releases_old_pilot(ledger):
     sample = s.start_pilot(ledger, 'carol', 2, seed=1, expected_version=1)
     s.revise_criteria(ledger, 'Revised criteria', expected_version=1)
+    defer_protocol(ledger)
     outside = next(f'R{i:06d}' for i in range(1, 11) if f'R{i:06d}' not in sample)
     vote(ledger, outside, 'alice', 'include', version=2)
     assert s.snapshot(ledger)['pilot'] is None

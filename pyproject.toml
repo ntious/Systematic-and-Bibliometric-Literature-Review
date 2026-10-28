@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]
-dependencies = []
+dependencies = ["zstandard>=0.23,<1", "keyring>=25,<26"]
 
 [project.optional-dependencies]
 ui-test = ["playwright>=1.50,<2"]

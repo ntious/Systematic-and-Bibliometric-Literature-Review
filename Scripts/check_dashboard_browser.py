@@ -146,6 +146,10 @@ def main():
                 with zipfile.ZipFile(archive_path) as archive:
                     assert 'screening/prisma.svg' in archive.namelist()
                     assert 'evidence/evidence.csv' in archive.namelist()
+                from slr.replication import verify
+                verification=verify(archive_path)
+                assert verification['passed'], verification
+                (output/'review-verification.json').write_text(json.dumps(verification,indent=2),encoding='utf-8')
 
                 saved_ledger=workspace.entry(second)['evidence_db']
                 workspace.update(second,evidence_db=None)
@@ -159,7 +163,7 @@ def main():
                 page.keyboard.press('Control+k')
                 page.locator('#palette-input').fill('protocol')
                 page.locator('[data-palette-go="protocol"]').click()
-                expect(page.locator('h1')).to_have_text('A shared direction for your review.')
+                expect(page.locator('h1')).to_have_text('Design a review you can defend.')
                 page.locator('#theme-toggle').click()
                 expect(page.locator('html')).to_have_attribute('data-theme','dark')
                 page.screenshot(path=str(output/'dark.png'), full_page=True)
@@ -169,7 +173,9 @@ def main():
                 for name,value in [('name','Browser QA review'),('question','How can synthetic examples support learning?'),('criteria','Include empirical studies of learning.'),('reviewer1','A'),('reviewer2','B'),('adjudicator','C')]:
                     page.locator('[name="'+name+'"]').fill(value)
                 page.locator('#modal-form button[type="submit"]').click()
-                expect(page.locator('#review-select')).to_have_value(workspace.entries[-1]['id'])
+                expect(page.locator('#review-select option:checked')).to_have_text('Browser QA review')
+                created_review=next(e for e in workspace.entries if e['name']=='Browser QA review')
+                expect(page.locator('#review-select')).to_have_value(created_review['id'])
                 expect(page.locator('#demo-banner')).to_be_hidden()
                 page.locator('[data-action="import"]').first.click()
                 records=[{'source':'synthetic','source_id':'1','title':'=1+1','authors':['Example A'],'year':2024,'doi':'10.9999/ui-1','abstract':'Synthetic browser-test record.'},
@@ -186,6 +192,15 @@ def main():
                 assert "'=1+1" in [c for row in csv.reader(io.StringIO(csv_path.read_text())) for c in row]
                 page.locator('a.nav-item').filter(has_text='Screening').click()
                 expect(page.locator('.queue-item')).to_have_count(2)
+                page.locator('[data-action="include"]').click()
+                expect(page.get_by_text('Screening blocked:',exact=False).last).to_be_visible()
+                expect(page.locator('.queue-item')).to_have_count(2)
+                page.locator('#actor-select').select_option('C')
+                page.locator('[data-action="screening-exception"]').click()
+                page.locator('#field-rationale').fill('Synthetic browser validation: protocol deferred for a teaching example.')
+                page.locator('#modal-form button[type="submit"]').click()
+                expect(page.get_by_text('Screening authorization: protocol-deferred.',exact=False)).to_be_visible()
+                page.locator('#actor-select').select_option('A')
                 page.locator('[data-action="include"]').click()
                 expect(page.locator('.queue-item')).to_have_count(1)
 

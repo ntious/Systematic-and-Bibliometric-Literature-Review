@@ -67,3 +67,9 @@ global-exclude report-inputs.json report-provenance.json prisma-coverage.json
 prune Papers
 
 include Docs/Analysis_Knowledge_Guide.md
+recursive-exclude Examples *.pdf *.PDF
+
+include Docs/LLM_Guardrails_and_Lessons.md
+include tests/conftest.py
+include configs/example_governed_protocol.json
+exclude ENGINEERING_REVIEW_REPORT.md

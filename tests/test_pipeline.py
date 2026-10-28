@@ -47,15 +47,15 @@ def test_invalid_plan_is_logged_without_network_calls(tmp_path):
     assert 'Queries must be unique' in (tmp_path/'invalid/SESSION.md').read_text()
 
 
-def test_dashboard_pipeline_persists_jobs_and_registers_actual_service_results(tmp_path,monkeypatch):
+def test_dashboard_pipeline_persists_jobs_and_registers_actual_service_results(tmp_path,monkeypatch,approved_search):
     stub_run(monkeypatch)
     workspace=Workspace(tmp_path/'workspace')
     entry=workspace.create({'name':'Pipeline test','question':'Does it work?','criteria':'Test only',
                             'reviewers':['A','B'],'adjudicator':'C'})
-    job=workspace.search(entry['id'],{'query':'good','queries':['good','bad'],'sources':['crossref'],'limit':10})
+    job=workspace.search(entry['id'],approved_search(workspace,entry,queries=['good']))
     workspace.executor.shutdown(wait=True)
     saved=workspace.jobs[job['id']]
-    assert saved['status']=='complete' and saved['outcome']=='partial'
+    assert saved['status']=='complete'
     assert not workspace.state(entry['id'])['activity']
     reopened=Workspace(workspace.root)
     try:

@@ -1,3 +1,4 @@
+from conftest import defer_protocol
 import base64
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
@@ -59,6 +60,9 @@ def test_duplicate_doi_import_and_old_tab_guard(workspace):
 def test_screening_uses_real_rules_and_blocks_corpus_replacement(workspace):
     entry = new_review(workspace)
     upload(workspace, entry)
+    with pytest.raises(ValueError, match='Screening blocked'):
+        workspace.mutate_screening(entry['id'], {'action':'decide','version':1,'actor':'A','record_id':'R000001','stage':'title','decision':'include'})
+    defer_protocol(workspace.entry(entry['id'])['screening_db'])
     workspace.mutate_screening(entry['id'], {'action': 'decide', 'version': 1, 'actor': 'A', 'record_id': 'R000001', 'stage': 'title', 'decision': 'include'})
     db = workspace.entry(entry['id'])['screening_db']
     assert screening.snapshot(db, reviewer='A')['queue'] == []
@@ -138,6 +142,10 @@ def test_http_create_import_decision_and_export(server):
     state = server.workspace.state(entry['id'])
     body = {'review_id': entry['id'], 'ledger_id': state['ledger_id'], 'action': 'decide', 'version': 1,
             'record_id': 'R000001', 'actor': 'A', 'stage': 'title', 'decision': 'exclude', 'reason': 'Wrong design'}
+    assert request(server, '/api/screening', body)[0] == 400
+    gate = state['screening_access']
+    exception = {'review_id':entry['id'],'ledger_id':state['ledger_id'],'action':'screening-access','version':1,'actor':'C','binding':gate['binding'],'rationale':'Synthetic HTTP test: protocol explicitly deferred.'}
+    assert request(server, '/api/screening', exception)[0] == 200
     assert request(server, '/api/screening', body)[0] == 200
     assert request(server, '/api/screening', {**body, 'ledger_id': 'stale'})[0] == 400
     assert request(server, '/api/export?review='+entry['id'])[0] == 200
@@ -151,16 +159,16 @@ def test_invalid_import_does_not_replace_the_current_corpus(workspace):
     assert workspace.state(entry['id'])['ledger_id'] == original
 
 
-def test_running_retrieval_blocks_import_and_finishes_atomically(workspace, monkeypatch):
+def test_running_retrieval_blocks_import_and_finishes_atomically(workspace, monkeypatch, approved_search):
     entry = new_review(workspace)
     started, release = threading.Event(), threading.Event()
+    from slr.cli import run as fixture_run
     def fake_search(config, output):
-        from slr.cli import run
         started.set()
         assert release.wait(10)
-        return run(config, output, 'Examples/demo_records.json')
-    monkeypatch.setattr('slr.dashboard.run_search', fake_search)
-    job = workspace.search(entry['id'], {'query': 'synthetic', 'sources': ['crossref'], 'limit': 10})
+        return fixture_run(config, output, 'Examples/demo_records.json')
+    monkeypatch.setattr('slr.cli.run', fake_search)
+    job = workspace.search(entry['id'], approved_search(workspace,entry))
     assert started.wait(5)
     try:
         with pytest.raises(ValueError, match='already running'):
@@ -172,13 +180,46 @@ def test_running_retrieval_blocks_import_and_finishes_atomically(workspace, monk
     assert workspace.state(entry['id'])['counts']['records_to_screen'] == 2
 
 
-def test_failed_retrieval_preserves_the_old_ledger(workspace, monkeypatch):
+def test_failed_retrieval_preserves_the_old_ledger(workspace, monkeypatch, approved_search):
     entry = new_review(workspace)
     original = workspace.state(entry['id'])['ledger_id']
     def fail(*args):
         raise ValueError('Synthetic retrieval failure')
-    monkeypatch.setattr('slr.dashboard.run_search', fail)
-    job = workspace.search(entry['id'], {'query': 'synthetic', 'sources': ['crossref'], 'limit': 10})
+    monkeypatch.setattr('slr.cli.run', fail)
+    job = workspace.search(entry['id'], approved_search(workspace,entry))
     workspace.executor.shutdown(wait=True)
     assert workspace.jobs[job['id']]['status'] == 'failed'
     assert workspace.state(entry['id'])['ledger_id'] == original
+
+
+def test_ai_settings_protected_and_available_without_a_review(server,monkeypatch):
+    assert request(server,'/api/ai-settings',token=False)[0]==403
+    code,raw,_=request(server,'/api/ai-settings')
+    data=json.loads(raw)
+    assert code==200 and len(data['providers'])==5
+    assert 'local_models' in data and 'resources' in data
+    assert request(server,'/settings.js',token=False)[0]==200
+    assert request(server,'/api/ai-settings',{'action':'local-setup','model':'llama3.2:3b'})[0]==400
+    assert request(server,'/api/ai-settings',{'action':'off'})[0]==200
+    assert request(server,'/api/ai-settings',{'action':'cloud-models','provider':'other','key':'test'})[0]==400
+
+
+def test_http_bundle_verification_does_not_import_review(server):
+    entry=new_review(server.workspace)
+    raw=server.workspace.export(entry['id'])
+    before=list(server.workspace.entries)
+    conn=HTTPConnection('127.0.0.1',server.server_port)
+    conn.request('POST','/api/verify-bundle',body=raw,headers={'Content-Type':'application/zip','X-SLR-Token':server.token})
+    response=conn.getresponse();result=json.loads(response.read());conn.close()
+    assert response.status==200 and result['passed'],result
+    assert server.workspace.entries==before
+    assert 'Scientific validity of evidence judgments' in result['not_checked']
+
+
+def test_http_verification_requires_session_token_and_zip(server):
+    conn=HTTPConnection('127.0.0.1',server.server_port)
+    conn.request('POST','/api/verify-bundle',body=b'not a zip',headers={'Content-Type':'application/zip'})
+    response=conn.getresponse();response.read();conn.close()
+    assert response.status==403
+    status,raw,_=request(server,'/api/verify-bundle',{})
+    assert status==400

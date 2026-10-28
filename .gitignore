@@ -134,3 +134,14 @@ prisma-coverage.json
 
 # Researcher-supplied full-text validation collection
 /Papers/
+
+# Local uploaded recommender-evaluation PDFs (existing tracked files remain tracked)
+/Examples/**/*.[pP][dD][fF]
+
+# Private managed AI settings, credentials metadata and model runtime
+.litatlas-ai/
+
+# Private LLM observation evidence and session-specific diagnostics
+/Docs/LLM_Observation_Register.md
+!/configs/example_governed_protocol.json
+/ENGINEERING_REVIEW_REPORT.md

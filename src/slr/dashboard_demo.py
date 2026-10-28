@@ -65,6 +65,8 @@ def create_demo(root, count=64, completed=False):
     name = 'Human–AI collaboration' if completed else 'AI in education'
     screening.initialize(db, run, name, ['Avery', 'Jordan'], 'Riley',
         'SYNTHETIC DEMONSTRATION. Include empirical studies of AI in higher education. Exclude non-empirical work, wrong populations and records outside education. Assess full texts independently; report one primary reason for exclusion.')
+    gate = screening.screening_access(db)
+    screening.screening_access(db, 'Riley', 'Synthetic teaching demonstration: protocol deferred; no actual research approval is claimed.', expected_version=1, expected_binding=gate['binding'])
     for i in range(1, count + 1):
         record = f'R{i:06}'
         if completed:

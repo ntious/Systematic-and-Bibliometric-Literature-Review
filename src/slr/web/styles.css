@@ -59,3 +59,43 @@ main:has(.reading-card .decision-bar){padding-bottom:96px}
 
 /* Larger readable status text must wrap within narrow review headers. */
 @media(max-width:700px){.review-strip{flex-wrap:wrap}.review-selector{min-width:0}.review-meta{flex-wrap:wrap;max-width:100%}}
+
+/* Guided AI settings */
+.ai-mode-grid,.ai-model-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0 22px}
+.ai-mode{font:inherit;color:var(--ink);text-align:left;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:14px;padding:22px;cursor:pointer}
+.ai-mode.selected{border:2px solid #8063c9;padding:21px;background:rgba(128,99,201,.08)}
+.ai-mode strong,.ai-mode span,.ai-model strong,.ai-model small{display:block}
+.ai-mode span{font-size:13px;margin-top:10px;line-height:1.6}
+.ai-device-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px;background:rgba(128,99,201,.06);border-radius:12px}
+.ai-device-grid small{display:block;font-size:12px;margin-bottom:6px}.ai-device-grid strong{font-size:16px}
+.ai-model{display:flex;gap:12px;border:1px solid var(--line,#ddd);border-radius:12px;padding:18px;cursor:pointer}.ai-model input{margin-top:5px}.ai-model small{font-size:12px;margin:8px 0}.ai-model a{font-size:12px}.ai-model .pill{margin-top:8px;display:inline-block}
+.ai-consent{display:flex;align-items:flex-start;gap:10px;margin:20px 0;font-size:13px;line-height:1.7}.ai-consent input{margin-top:5px}
+.ai-status-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:22px}#ai-cloud-panel input[type=password]{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#ddd);font:inherit}#ai-setup-progress{padding:16px 0}#ai-setup-progress progress{width:65%;accent-color:#8063c9}#ai-cloud-status{display:block;margin:14px 0}#ai-forget-key{margin-top:20px}
+@media(max-width:760px){.ai-mode-grid,.ai-model-grid{grid-template-columns:1fr}.ai-device-grid{grid-template-columns:repeat(2,1fr)}}
+
+.ai-model{align-items:flex-start}
+
+/* Topic/question review workspace */
+#question-topic,#question-draft,.question-suggestion textarea{display:block;width:100%;margin:8px 0 18px;resize:vertical;box-sizing:border-box}
+.question-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;margin:18px 0}
+.question-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.question-suggestion{padding:16px 0;border-bottom:1px solid var(--line)}
+.question-history{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;font-size:12px}
+@media(max-width:760px){.question-comparison{grid-template-columns:1fr}}
+
+.plan-section{scroll-margin-top:20px}.plan-field{display:block;margin-bottom:18px}.plan-field>input,.plan-field>textarea,.plan-source textarea,.plan-source input[type=number]{display:block;width:100%;box-sizing:border-box;margin-top:7px}.plan-field small{display:block;color:var(--muted);font-size:12px;margin-top:6px}.plan-source{padding:18px;border:1px solid var(--line);border-radius:10px;margin:15px 0}.plan-source input[type=checkbox]{min-height:0;margin-right:8px}.plan-pilot{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:10px}.plan-pilot textarea{display:block;width:100%;box-sizing:border-box}.plan-log{margin:8px}
+
+.workflow-guidance{margin-block:18px;border-inline-start:4px solid #7960cf}.workflow-guidance h2{margin-bottom:8px}.workflow-guidance p{margin-bottom:16px}.workflow-guidance .toolbar{flex-wrap:wrap;gap:10px}.workflow-guidance .button{white-space:normal;max-width:100%;text-align:center}.workflow-next[aria-disabled="true"]{opacity:.6}
+
+#ai-activity{margin:18px clamp(16px,4vw,64px) 0}.ai-activity-row{display:flex;align-items:center;gap:14px;background:var(--surface,#fff);border:1px solid #b7a5e8;border-radius:12px;padding:16px;margin-bottom:8px}.ai-activity-row .spinner{width:22px;height:22px;flex-shrink:0}.ai-activity-row>div{flex:1;min-width:0}.ai-activity-row p{margin:5px 0 0;overflow-wrap:anywhere}.ai-activity-row .button{white-space:normal;flex-shrink:0}.ai-failed{border-color:#c18458}@media(max-width:600px){.ai-activity-row{flex-wrap:wrap}.ai-activity-row .button{margin-left:36px}}@media(prefers-reduced-motion:reduce){#ai-activity .spinner{animation:none}}
+
+.required-marker{color:#b3263e;font-weight:800}.plan-field small{font-weight:400}[data-theme="dark"] .required-marker{color:#ff9dad}
+
+.protocol-section-nav{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.protocol-section-nav .button,.plan-section [data-section-next]{white-space:normal;max-width:100%;text-align:left}
+
+.verification-fingerprint{display:block;overflow-wrap:anywhere;white-space:normal;padding:12px;background:var(--surface-alt);border-radius:8px}.verification-checks{max-height:480px;overflow:auto}#verification-progress{display:flex;align-items:center;gap:12px;margin-top:12px}#verification-file{max-width:100%}
+
+.question-framework{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:10px}.question-framework label{display:block;margin-top:12px}.question-framework select,.question-framework textarea{display:block;width:100%;max-width:100%;margin-top:6px}.question-framework p{overflow-wrap:anywhere}
+
+.protocol-assist{padding:18px;border:1px solid var(--line);border-radius:12px;margin:16px 0}.protocol-assist label{display:block;margin:12px 0}.protocol-assist input,.protocol-assist select,.protocol-assist textarea{display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:7px}.protocol-assist .form-row>*{min-width:0}.protocol-selections,.protocol-field-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.protocol-selections .button,.protocol-field-options .button{white-space:normal;overflow-wrap:anywhere;text-align:left;max-width:100%}.plan-source small{display:block;color:var(--muted);margin:8px 0}.plan-section [aria-busy=true]::before{content:'';display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 1s linear infinite}@media(prefers-reduced-motion:reduce){.plan-section [aria-busy=true]::before{animation:none}}
+.protocol-assist [hidden]{display:none}

@@ -1,0 +1,18 @@
+'use strict';
+const verificationView={result:null,name:'',busy:false,error:''};
+window.renderVerification=async function(){
+ const v=verificationView;
+ $('#main').innerHTML=heading('Verify a review.','Inspect a private review bundle using the same checks as the CLI. This does not import papers or change your review.')+`
+ <section class="card"><div class="card-body"><h2>Choose a review export</h2><p>Use the ZIP downloaded by Export review. Files are processed by this local application and temporary upload files are removed after checking. No model or research-provider request is made.</p><label class="form-field">Review bundle ZIP <span class="required-marker" aria-label="required">*</span><input id="verification-file" type="file" accept=".zip,application/zip" ${v.busy?'disabled':''}></label><p class="detail-caption">Up to 64 MiB uploaded and 128 MiB expanded. For larger bundles use <code>slr verify</code> locally.</p><div class="toolbar"><button id="verification-run" class="button primary" ${v.busy?'disabled':''}>${v.busy?'Checking bundle…':'Verify bundle'}</button><button id="verification-clear" class="button soft" ${v.busy?'disabled':''}>Clear results</button></div><div id="verification-progress" role="status">${v.busy?'<span class="spinner" aria-hidden="true"></span> Checking file integrity and replaying recorded calculations…':''}</div>${v.error?`<p class="notice orange" role="alert">${esc(v.error)}</p>`:''}</div></section>
+ ${v.result?verificationResults(v.result,v.name):''}`;
+ $('#verification-run').onclick=async()=>{
+  const file=$('#verification-file').files[0];
+  if(!file)return toast('Choose a review export ZIP first.',true);
+  if(!file.name.toLowerCase().endsWith('.zip')||!file.size||file.size>64*1024*1024)return toast('Choose a nonempty ZIP up to 64 MiB.',true);
+  v.busy=true;v.error='';v.result=null;v.name=file.name;await renderVerification();
+  try{const response=await fetch('/api/verify-bundle',{method:'POST',headers:{'X-SLR-Token':token,'Content-Type':'application/zip'},body:file});const result=await response.json();if(!response.ok)throw Error(result.error||'Bundle could not be checked');v.result=result;}catch(e){v.error='Verification could not complete: '+e.message;}finally{v.busy=false;if(S.page==='verification')await renderVerification();}
+ };
+ $('#verification-clear').onclick=()=>{v.result=null;v.name='';v.error='';renderVerification();};
+ $('#verification-download')?.addEventListener('click',()=>download(JSON.stringify(v.result,null,2),'review-verification-result.json','application/json'));
+};
+function verificationResults(r,name){return `<section class="card" aria-label="Verification results"><div class="card-body"><h2>${r.passed?'Internal consistency checks passed':'Verification checks failed'}</h2><p>${esc(name)}</p><p class="notice">A pass checks the supplied records and calculations. It does not establish scientific validity, complete search coverage, authentic identities or independent review.</p><p>Bundle software: ${esc(r.bundle_software_version||'Unavailable')} · Verifier: ${esc(r.software_version)}</p><label>Manifest fingerprint<code class="verification-fingerprint">${esc(r.fingerprint)}</code></label><p class="detail-caption">This is a local hash, not a signature or protection against someone rewriting the entire bundle.</p><h3>Checks performed</h3><div class="verification-checks">${r.checks.map(c=>`<article class="question-suggestion"><strong>${c.passed?'Pass':'Fail'} · ${esc(c.check)}</strong><p>${esc(c.detail)}</p></article>`).join('')}</div><h3>Not checked</h3><ul>${r.not_checked.map(s=>`<li>${esc(s)}</li>`).join('')}</ul><p>${esc(r.notice)}</p><button class="button soft" id="verification-download">Download verification result</button></div></section>`;}

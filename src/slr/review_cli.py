@@ -47,6 +47,9 @@ def flow_svg(counts, agreement=None):
         for label, stage in (('Title/abstract', 'title'), ('Full-text', 'fulltext')):
             parts.append(f'<text x="35" y="{y + 5}" font-size="13">{escape(agreement_line(label, agreement[stage]))}</text>')
             y += 20
+    for line in textwrap.wrap(c.get('deduplication_notice', 'Historical deduplication metadata unavailable.'), width=105):
+        parts.append(f'<text x="35" y="{y + 5}" font-size="13">{escape(line)}</text>')
+        y += 20
     parts.append(f'<text x="35" y="{y + 5}" font-size="13">Database/register searches only; each retained record represents one report.</text>')
     parts.append(f'<text x="35" y="{y + 25}" font-size="13">Based on PRISMA 2020: Page et al. BMJ 2021;372:n71. doi:10.1136/bmj.n71</text>')
     status = 'Complete' if c['complete'] else 'INCOMPLETE — pending decisions, conflicts, or study links remain'
@@ -57,9 +60,14 @@ def export_review(database, output):
     data = screening.snapshot(database)
     folder = Path(output)
     folder.mkdir(parents=True, exist_ok=False)
+    from . import ai_disclosure
+    write_json(folder / 'ai-disclosure.json', ai_disclosure.capture(database))
+    (folder / 'deduplication-limitations.txt').write_text(data['prisma']['deduplication_notice'], encoding='utf-8')
     write_json(folder / 'review.json', data)
     write_json(folder / 'prisma.json', data['prisma'])
     write_json(folder / 'agreement.json', {**data['agreement'], 'pilot': data['pilot']})
+    from .review_plan import state as plan_state
+    write_json(folder / 'protocol-approvals.json', plan_state(database))
     protocol_state = protocol.state(database)
     if protocol_state['version']:
         write_json(folder / 'protocol.json', protocol_state)
@@ -78,6 +86,13 @@ def export_review(database, output):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
+    create = sub.add_parser('create', help='Create an empty review before searching')
+    create.add_argument('--name',required=True)
+    create.add_argument('--topic',required=True)
+    create.add_argument('--question',action='append',default=[])
+    create.add_argument('--reviewers',nargs=2,required=True)
+    create.add_argument('--adjudicator',required=True)
+    create.add_argument('--criteria',required=True)
     init = sub.add_parser('init', help='Initialize a new ledger from a completed retrieval run')
     init.add_argument('--run', required=True)
     init.add_argument('--name', required=True)
@@ -106,6 +121,12 @@ def main(argv=None):
     pilot.add_argument('--actor', required=True)
     pilot.add_argument('--size', required=True, type=int)
     pilot.add_argument('--seed', type=int, help='Random seed; defaults to one derived from the review ID and criteria version')
+    access = sub.add_parser('screening-access', help='Inspect the screening gate or explicitly record/revoke a protocol-deferred exception')
+    access.add_argument('--actor')
+    access.add_argument('--rationale')
+    access.add_argument('--context', help='Saved screening-access JSON inspected by the adjudicator')
+    access.add_argument('--revoke', type=int)
+    access.add_argument('--version', type=int)
     sub.add_parser('agreement', help="Inter-rater agreement (Cohen's kappa, PABAK) and pilot round status")
     queue = sub.add_parser('queue', help='Show a reviewer queue without the other reviewer decisions')
     queue.add_argument('--reviewer', required=True)
@@ -118,8 +139,17 @@ def main(argv=None):
             item.add_argument('--version', required=True, type=int, help='Expected current criteria version; stale writes are rejected')
     args = parser.parse_args(argv)
     try:
-        if args.command == 'init':
+        if args.command == 'create':
+            from .workflow_cli import create_review
+            result=create_review(args.db,name=args.name,topic=args.topic,research_questions=args.question,reviewers=args.reviewers,adjudicator=args.adjudicator,criteria=Path(args.criteria).read_text(encoding='utf-8'))
+        elif args.command == 'init':
+            _,_,origin=screening.verify_run(args.run)
+            if origin.get('mode','').startswith(('live','approved')):
+                raise ValueError('Live/unregistered searches cannot initialize an approved review. Use slr review create and slr plan run; import external libraries through the intake route.')
             result = {'records': screening.initialize(args.db, args.run, args.name, args.reviewers, args.adjudicator, Path(args.criteria).read_text(encoding='utf-8'))}
+        elif args.command == 'screening-access':
+            binding = json.loads(Path(args.context).read_text())['binding'] if args.context else None
+            result = screening.screening_access(args.db, args.actor, args.rationale, expected_version=args.version, expected_binding=binding, revoke=args.revoke)
         elif args.command == 'criteria':
             result = {'criteria_version': screening.revise_criteria(args.db, Path(args.file).read_text(encoding='utf-8'), expected_version=args.version)}
         elif args.command in ('decide', 'adjudicate'):

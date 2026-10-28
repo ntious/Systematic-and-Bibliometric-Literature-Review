@@ -13,7 +13,7 @@ from .screening import _check_version, _context, connect, now
 FRAMEWORKS = ('PICO', 'PECO', 'PCC', 'SPIDER', 'other')
 STAGES = ('planned', 'searching', 'screening', 'extraction', 'synthesis', 'completed')
 MAX_TEXT = 20000
-TEXT, BOOL, DATE, TEXTS, MAPPING = 'text', 'bool', 'date', 'texts', 'mapping'
+TEXT, BOOL, DATE, TEXTS, MAPPING, INT = 'text', 'bool', 'date', 'texts', 'mapping', 'int'
 
 # Every protocol field; unknown keys are rejected so typos never silently drop content.
 SCHEMA = {
@@ -26,9 +26,13 @@ SCHEMA = {
     'review_type': TEXT, 'stage': TEXT, 'anticipated_start': DATE, 'anticipated_completion': DATE,
     'condition_or_domain': TEXT, 'context': TEXT, 'language': TEXT, 'country': TEXT, 'keywords': TEXTS,
     'rationale': TEXT,
-    'objectives': {'question': TEXT, 'framework': TEXT, 'elements': MAPPING},
+    'objectives': {'question': TEXT, 'framework': TEXT, 'elements': MAPPING, 'framework_records': 'framework_records'},
     'eligibility': {'study_characteristics': TEXT, 'report_characteristics': TEXT},
-    'information_sources': [{'name': TEXT, 'platform': TEXT, 'planned_date': DATE, 'coverage': TEXT}],
+    'publication_period': {'from': DATE, 'to': DATE, 'basis': TEXT},
+    'information_sources': [{'name': TEXT, 'platform': TEXT, 'planned_date': DATE, 'coverage': TEXT, 'kind': TEXT, 'adapter': TEXT}],
+    'searches': [{'adapter': TEXT, 'queries': [TEXT], 'max_records_per_source': INT}],
+    'screening': {'exclusion_reasons': TEXTS, 'calibration_pilot_size': INT},
+    'extraction': {'framework_sha256': TEXT},
     'search_strategy': {'database': TEXT, 'strategy': TEXT},
     'data_management': TEXT, 'selection_process': TEXT, 'data_collection_process': TEXT, 'data_items': TEXT,
     'outcomes': {'main': TEXT, 'additional': TEXT, 'prioritization': TEXT},
@@ -55,9 +59,15 @@ def _check(value, spec, path):
             raise ValueError(f'{path} must be a list of at most 200 entries')
         for index, item in enumerate(value):
             _check(item, spec[0], f'{path}[{index}]')
+    elif spec == 'framework_records':
+        if not isinstance(value,list) or len(value)>200 or any(not isinstance(v,dict) for v in value):
+            raise ValueError('Framework records must be a list of question mappings')
     elif spec == TEXT:
         if not isinstance(value, str) or len(value) > MAX_TEXT:
             raise ValueError(f'{path} must be text of at most {MAX_TEXT} characters')
+    elif spec == INT:
+        if type(value) is not int or not 1 <= value <= 10000:
+            raise ValueError(f'{path} must be an integer from 1 to 10000')
     elif spec == BOOL:
         if type(value) is not bool:
             raise ValueError(f'{path} must be true or false')
@@ -136,7 +146,7 @@ ITEMS = [
     ('5c', ADMIN, 'Support: role of sponsor or funder', ['support.sponsor_role'], lambda p: not _no_sponsor(p), lambda p: filled(p, 'support.sponsor_role')),
     ('6', INTRO, 'Rationale', ['rationale'], ALWAYS, lambda p: filled(p, 'rationale')),
     ('7', INTRO, 'Objectives', ['objectives.question', 'objectives.framework', 'objectives.elements'], ALWAYS,
-     lambda p: filled(p, 'objectives.question', 'objectives.framework', 'objectives.elements')),
+     lambda p: filled(p, 'objectives.question') and (filled(p, 'objectives.framework_records') or filled(p, 'objectives.framework', 'objectives.elements'))),
     ('8', METHODS, 'Eligibility criteria', ['eligibility.study_characteristics', 'eligibility.report_characteristics'], ALWAYS,
      lambda p: filled(p, 'eligibility.study_characteristics', 'eligibility.report_characteristics')),
     ('9', METHODS, 'Information sources', ['information_sources[].name', 'information_sources[].planned_date'], ALWAYS,
@@ -265,7 +275,7 @@ OSF = [
     ('End date', 'anticipated_completion', lambda p: _render(p.get('anticipated_completion'))),
     ('Background', 'rationale', lambda p: _render(p.get('rationale'))),
     ('Primary research question(s)', 'objectives.question', lambda p: _render(get(p, 'objectives.question'))),
-    ('Question framework and elements', 'objectives.framework; objectives.elements', lambda p: _join(p, 'objectives.framework', 'objectives.elements')),
+    ('Question framework and elements', 'objectives.framework_records; objectives.framework; objectives.elements', lambda p: _join(p, 'objectives.framework_records', 'objectives.framework', 'objectives.elements')),
     ('Dependent variables / outcomes', 'outcomes', lambda p: _render(p.get('outcomes'))),
     ('Funding', 'support', lambda p: _render(p.get('support'))),
     ('Conflicts of interest', 'conflicts_of_interest', lambda p: _render(p.get('conflicts_of_interest'))),
@@ -317,33 +327,55 @@ def save(database, protocol, actor, *, expected_version, amendment=None):
     """Append a protocol version. Later versions are amendments with a description and rationale."""
     content = validate(protocol)
     with connect(database) as conn:
-        for statement in PROTOCOL_TABLES:  # executescript would commit the open transaction
-            conn.execute(statement)
-        review, criteria_version = _context(conn)
-        if actor not in review['reviewers'] + [review['adjudicator']]:
-            raise ValueError('Actor is not assigned to this review')
-        current = conn.execute('SELECT * FROM protocol ORDER BY version DESC LIMIT 1').fetchone()
-        current_version = current['version'] if current else 0
-        if type(expected_version) is not int or expected_version != current_version:
-            raise ValueError(f'Stale protocol version: current version is {current_version}')
-        if current is None:
-            if amendment is not None:
-                raise ValueError('The first protocol version is not an amendment')
-            changed = sorted(content)
-        else:
-            if not isinstance(amendment, dict) or set(amendment) != {'description', 'rationale'} or not all(
-                    isinstance(amendment[k], str) and amendment[k].strip() for k in amendment):
-                raise ValueError('Protocol amendments need a description and a rationale')
-            amendment = {k: v.strip() for k, v in amendment.items()}
-            previous = json.loads(current['content'])
-            changed = sorted(k for k in set(previous) | set(content) if previous.get(k) != content.get(k))
-            if not changed:
-                raise ValueError('Protocol content is unchanged; nothing to amend')
-        text = _canonical(content)
-        conn.execute('INSERT INTO protocol VALUES (?,?,?,?,?,?,?,?)',
-                     (current_version + 1, criteria_version, text, sha256(text.encode()).hexdigest(), actor,
-                      json.dumps(amendment, ensure_ascii=False) if amendment else None, json.dumps(changed), now()))
-        return current_version + 1
+        return save_in_connection(conn, content, actor, expected_version=expected_version, amendment=amendment)
+
+
+def bind_question_frameworks(conn, content):
+    # Authoritative records come only from the approved question ledger.
+    from . import questions
+    q = questions._state(questions._rows(conn))
+    if q['approved']:
+        draft = q['current']['content']['draft']
+        maps = draft.get('framework_maps', [])
+        objectives = content.setdefault('objectives', {})
+        if maps or 'framework_records' in objectives:
+            objectives.pop('framework', None)
+            objectives.pop('elements', None)
+            objectives['framework_records'] = json.loads(json.dumps(maps))
+    return content
+
+
+def save_in_connection(conn, content, actor, *, expected_version, amendment=None):
+    content = bind_question_frameworks(conn, validate(content))
+    for statement in PROTOCOL_TABLES:  # executescript would commit the open transaction
+        conn.execute(statement)
+    review, criteria_version = _context(conn)
+    if actor not in review['reviewers'] + [review['adjudicator']]:
+        raise ValueError('Actor is not assigned to this review')
+    current = conn.execute('SELECT * FROM protocol ORDER BY version DESC LIMIT 1').fetchone()
+    current_version = current['version'] if current else 0
+    if type(expected_version) is not int or expected_version != current_version:
+        raise ValueError(f'Stale protocol version: current version is {current_version}')
+    if current is None:
+        if amendment is not None:
+            raise ValueError('The first protocol version is not an amendment')
+        changed = sorted(content)
+    else:
+        if not isinstance(amendment, dict) or set(amendment) != {'description', 'rationale'} or not all(
+                isinstance(amendment[k], str) and amendment[k].strip() for k in amendment):
+            raise ValueError('Protocol amendments need a description and a rationale')
+        amendment = {k: v.strip() for k, v in amendment.items()}
+        previous = json.loads(current['content'])
+        changed = sorted(k for k in set(previous) | set(content) if previous.get(k) != content.get(k))
+        if not changed and current['criteria_version']==criteria_version:
+            raise ValueError('Protocol content is unchanged; nothing to amend')
+        if not changed:
+            changed=['criteria_link']
+    text = _canonical(content)
+    conn.execute('INSERT INTO protocol VALUES (?,?,?,?,?,?,?,?)',
+                 (current_version + 1, criteria_version, text, sha256(text.encode()).hexdigest(), actor,
+                  json.dumps(amendment, ensure_ascii=False) if amendment else None, json.dumps(changed), now()))
+    return current_version + 1
 
 
 def state(database):

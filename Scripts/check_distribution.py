@@ -12,16 +12,16 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = {'Implementation_Roadmap.md', 'Screening_Guide.md', 'Bibliometrics_Guide.md',
         'Evidence_Guide.md', 'Dashboard_Guide.md', 'Pipeline_Guide.md',
         'Local_Data_Policy.md', 'Protocol_Guide.md', 'Corpus_Analytics_Guide.md',
-        'Installation_Guide.md', 'Release_Guide.md', 'Reporting_Guide.md', 'Analysis_Knowledge_Guide.md'}
+        'Installation_Guide.md', 'Release_Guide.md', 'Reporting_Guide.md', 'Analysis_Knowledge_Guide.md', 'LLM_Guardrails_and_Lessons.md'}
 EXAMPLES = {'demo_records.json', 'bibliometrics_records.json', 'evidence_report.txt',
             'corpus_records.json', 'synthetic_venue_metrics.csv'}
 CONFIGS = {'example_review.toml', 'pubmed_review.toml', 'example_criteria.md',
-           'evidence_framework.json', 'example_pipeline.json', 'example_calibration.json', 'example_protocol.json'}
+           'evidence_framework.json', 'example_pipeline.json', 'example_calibration.json', 'example_protocol.json', 'example_governed_protocol.json'}
 SCRIPTS = {'literature_search.py', 'screening_demo.py', 'evidence_demo.py',
            'check_dashboard_browser.py', 'check_corpus_browser.py', 'check_distribution.py',
            'check_installed_package.py', 'build_docs.py'}
-FORBIDDEN = {'research', 'outputs', 'private', 'local', 'downloads', '.git', '.codex', '.agents',
-             '.claude', '__pycache__', 'Practical_Test_Log.md', 'platform_enhancement_plan.md',
+FORBIDDEN = {'.litatlas-ai', 'research', 'outputs', 'private', 'local', 'downloads', '.git', '.codex', '.agents',
+             '.claude', '__pycache__', 'Practical_Test_Log.md', 'LLM_Observation_Register.md', 'platform_enhancement_plan.md',
              'reviewer_feedback.md', 'workspace.json', 'jobs.json', 'SESSION.md', 'session.json',
              'scimago-original.csv', 'external-venue-metrics.csv', 'input-records.json'}
 SECRETS = re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bgh[pousr]_[A-Za-z0-9]{30,}|\bgithub_pat_[A-Za-z0-9_]{40,}|\bsk-(?:proj-)?[A-Za-z0-9_-]{32,}')
@@ -47,7 +47,7 @@ def allowed(path, wheel):
                 (parts[0] == 'Examples' and path.name in EXAMPLES) or
                 (parts[0] == 'configs' and path.name in CONFIGS) or
                 (parts[0] == 'Scripts' and path.name in SCRIPTS) or
-                (parts[0] == 'tests' and path.name.startswith('test_') and path.suffix == '.py'))
+                (parts[0] == 'tests' and (path.name.startswith('test_') or path.name=='conftest.py') and path.suffix == '.py'))
     return False
 
 

@@ -1,3 +1,4 @@
+from conftest import defer_protocol
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from hashlib import sha256
@@ -27,6 +28,7 @@ def ledger(tmp_path):
     run('configs/example_review.toml', run_folder, 'Examples/demo_records.json')
     screening = tmp_path / 'screening.sqlite'
     s.initialize(screening, run_folder, 'Evidence test', ['alice', 'bob'], 'carol', 'Example criteria')
+    defer_protocol(screening)
     for actor in ('alice', 'bob'):
         s.decide(screening, 'R000001', actor, 'title', 'include', expected_version=1)
         s.decide(screening, 'R000002', actor, 'title', 'exclude', 'Wrong population', expected_version=1)
@@ -227,6 +229,7 @@ def test_screening_scope_change_blocks_writes_but_preserves_historical_exports(l
     approve(ledger, proposal)
     screening = ledger.parent / 'screening.sqlite'
     s.revise_criteria(screening, 'Revised criteria', expected_version=1)
+    defer_protocol(screening)
     with pytest.raises(ValueError, match='scope changed'):
         e.prepare(ledger, 'extract', 'R000001')
     data = e.snapshot(ledger)
@@ -330,6 +333,7 @@ def test_cli_status_and_errors(ledger, capsys):
 def test_incomplete_screening_cannot_initialize_evidence(ledger, tmp_path):
     screening = ledger.parent / 'screening.sqlite'
     s.revise_criteria(screening, 'New criteria', expected_version=1)
+    defer_protocol(screening)
     with pytest.raises(ValueError, match='Complete screening'):
         e.initialize(tmp_path / 'new.sqlite', screening, FRAMEWORK)
     assert not (tmp_path / 'new.sqlite').exists()
@@ -369,3 +373,36 @@ def test_api_timeout_has_no_retry_or_secret_output(ledger, tmp_path, monkeypatch
             run_openai(ledger, request['request_id'], 'model', tmp_path / 'timeout')
     assert mock.call_count == 1 and 'secret' not in str(error.value)
     assert json.loads((tmp_path / 'timeout/manifest.json').read_text())['status'] == 'failed'
+
+
+def test_dashboard_selected_model_job_imports_only_pending_proposals(ledger,tmp_path,monkeypatch):
+    from slr.dashboard import Workspace
+    workspace=Workspace(tmp_path/'workspace')
+    try:
+        entry=workspace.attach(e.snapshot(ledger)['scope']['screening_path'],ledger)
+        packet=e.prepare(ledger,'extract','R000001')
+        workspace.ai.config={'mode':'cloud','provider':'openai','model':'test-model'}
+        with pytest.raises(ValueError,match='Confirm sending'):
+            workspace.run_ai_request(entry['id'],{'request_id':packet['request_id'],'selected_provider':'openai','selected_model':'test-model'})
+        monkeypatch.setattr(workspace.ai,'run_packet',lambda p,*args,**kwargs:envelope(p))
+        job=workspace.run_ai_request(entry['id'],{'request_id':packet['request_id'],'selected_provider':'openai','selected_model':'test-model','allow_external':True})
+        workspace.executor.shutdown(wait=True)
+        assert workspace.jobs[job['id']]['status']=='complete'
+        state=e.snapshot(ledger)
+        assert state['pending']==1 and state['proposals'][0]['state']=='pending'
+        assert not state['proposals'][0]['reviews']
+    finally:
+        workspace.ai.close();workspace.executor.shutdown(wait=True)
+
+
+def test_dashboard_blocks_provider_change_after_cloud_consent(ledger,tmp_path):
+    from slr.dashboard import Workspace
+    workspace=Workspace(tmp_path/'workspace')
+    try:
+        entry=workspace.attach(e.snapshot(ledger)['scope']['screening_path'],ledger)
+        packet=e.prepare(ledger,'extract','R000001')
+        workspace.ai.config={'mode':'cloud','provider':'anthropic','model':'other-model'}
+        with pytest.raises(ValueError,match='AI selection changed'):
+            workspace.run_ai_request(entry['id'],{'request_id':packet['request_id'],'allow_external':True,'selected_provider':'openai','selected_model':'old-model'})
+        assert not workspace.jobs
+    finally:workspace.ai.close();workspace.executor.shutdown(wait=True)

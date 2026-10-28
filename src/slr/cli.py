@@ -60,7 +60,7 @@ def run(config_path, output, fixture=None):
                 logs.append(log)
                 write_json(folder / f"raw-{source}.json", pages)
         write_results(folder, records)
-        manifest = {"status": "complete", "mode": "offline-fixture" if fixture else "live", "started_utc": started,
+        manifest = {"status": "complete", "mode": "offline-fixture" if fixture else "live", "protocol_approval": "unbound", "started_utc": started,
                     "finished_utc": datetime.now(timezone.utc).isoformat(), "config": recorded, "searches": logs,
                     "version": __version__, "files": {p.name: sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir())}}
         write_json(folder / "manifest.json", manifest)
@@ -72,6 +72,18 @@ def run(config_path, output, fixture=None):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("replicate", "verify"):
+        from .replication import main as replication_main
+        return replication_main(argv[1:], verification=argv[0]=="verify")
+    if argv and argv[0] in ("plan", "questions"):
+        from .workflow_cli import main as plan_main, questions_main
+        return (plan_main if argv[0]=="plan" else questions_main)(argv[1:])
+    if argv and argv[0] == "knowledge-ai":
+        from .knowledge_ai import main as knowledge_ai_main
+        return knowledge_ai_main(argv[1:])
+    if argv and argv[0] == "knowledge-evaluate":
+        from .knowledge_evaluation import main as evaluate_main
+        return evaluate_main(argv[1:])
     if argv and argv[0] == "knowledge":
         from .analysis_knowledge import main as knowledge_main
         return knowledge_main(argv[1:])
@@ -99,12 +111,15 @@ def main(argv=None):
     if argv and argv[0] == "protocol":
         from .protocol import main as protocol_main
         return protocol_main(argv[1:])
-    parser = argparse.ArgumentParser(description=__doc__, epilog="Also available: slr knowledge --help; slr report --help; slr protocol --help; slr pipeline --help; slr review --help; slr import --help; slr analyze --help; slr evidence --help; slr dashboard --help")
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Also available: slr plan --help; slr questions --help; slr knowledge-ai --help; slr knowledge-evaluate --help; slr knowledge --help; slr report --help; slr protocol --help; slr pipeline --help; slr review --help; slr import --help; slr analyze --help; slr evidence --help; slr dashboard --help")
     parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--output", required=True, help="New output directory; existing directories are never overwritten")
+    parser.add_argument("--unregistered", action="store_true", help="Explicit standalone retrieval, not an approved review search")
     parser.add_argument("--fixture", help="Offline normalized-record JSON; skips API retrieval and filters")
     args = parser.parse_args(argv)
+    if not args.fixture and not args.unregistered:
+        parser.error("Use slr plan run for an approved review, or explicitly select --unregistered for standalone retrieval")
     try:
         folder = run(args.config, args.output, args.fixture)
     except (ValueError, OSError, SearchError, TypeError) as exc:

@@ -44,3 +44,63 @@ slr protocol export --db outputs/demo.sqlite --output outputs/protocol-v2
 - Older ledgers work unchanged. The protocol table is created on the first save, and reading status never modifies the database.
 
 A ledger export (`slr protocol export --db`) adds `protocol-history.json` and `amendments.md`. `slr review export` also includes `protocol.json` (current protocol, history and criteria links) whenever a protocol has been saved.
+
+## Guided protocol and pilot workflow in the dashboard
+
+After approving the current topic and research questions, open **Review protocol**. Seven sections guide eligibility and publication period, information sources, source-specific queries, screening, extraction, appraisal and synthesis. Publication dates start blank; the researcher enters the intended range and its rationale. Automated adapters are OpenAlex, Crossref and PubMed, which retrieve metadata. Other sources can be documented as manual searches without implying that the application searches them or supplies their full text.
+
+Save the draft, then approve each section. Extraction, appraisal and synthesis may instead be marked not applicable with a substantive rationale. A separate final action approves the exact protocol version. New questions, criteria or relevant protocol changes invalidate affected approvals. Each action checks the question approval and criteria shown in that browser tab; stale tabs must reload. Saving eligibility with changed wording creates a new screening-criteria version and screening pass, retaining old decisions.
+
+Final protocol approval enables a bounded pilot, not a main search. Pilot results remain separate from the study library. Inspect their exact source-specific queries, period, caps, source diagnostics and sample records; then record notes and approve the strategy or request revisions. Only a current protocol and researcher-approved pilot strategy permit the dashboard main-search action. Source/queries that fail make the governed run fail visibly; partial results remain in session artifacts instead of becoming an approved corpus. Existing nonempty main corpora are preserved; combining and rerunning them is a later workflow increment.
+
+The backend checks authorization before retrieval, between queries and before corpus registration. Changes during a run can make its results historical and prevent registration. Protocol, plan, question and criteria histories are retained when an import or approved main search replaces the active corpus ledger. Earlier/imported corpora remain screenable and are labelled as unbound or externally assembled, without retrospective approval.
+
+Optional **Ask local AI for suggestions** uses the selected local model. Cloud configurations remain supported but require explicit per-request disclosure and consent. Only approved topic/questions, the chosen section, its field rules and relevant adapter capabilities are sent; PDFs and other protocol sections are omitted. The application supplies a versioned prompt. Proposals need individual accept/edit/reject decisions and cannot approve sections. Dates are excluded from AI replacements. Unchanged suggestions record a decision without a fake amendment. All errors and model requests/responses remain inspectable in session/history records.
+
+Review ZIP exports include `protocol-approval-history.json` and the existing protocol/checklist/registry drafts. Screening exports include `protocol-approvals.json`. Presence of text, approval or a successful model response does not establish methodological adequacy.
+
+**Scope:** these gates govern dashboard searches and `slr plan` searches through the shared authorization service. Standalone live commands require explicit `--unregistered` and do not grant protocol approval; `slr review init` refuses unbound live or separately approved runs that would lose their approval history. Existing review databases and imported external libraries remain accessible with their provenance labels. Low-level Python retrieval adapters remain unbound utilities. The PRISMA-P reporting checklist and seven workflow-section approvals are different checks.
+
+
+## Review-bound CLI workflow
+
+Create an empty review before searching. Use private workspace paths and replace synthetic examples with your own reviewed content:
+
+```bash
+slr review create --db workspaces/review.sqlite --name "My review" \
+  --topic "My topic" --question "My research question?" \
+  --reviewers Alice Bob --adjudicator Carol --criteria configs/example_criteria.md
+slr questions status --db workspaces/review.sqlite
+slr questions approve --db workspaces/review.sqlite --actor Alice --expected-revision 1
+slr plan status --db workspaces/review.sqlite --output workspaces/context-1.json
+slr plan save --db workspaces/review.sqlite --actor Alice --context workspaces/context-1.json \
+  --file configs/example_governed_protocol.json
+```
+
+The new example is synthetic and workflow-complete; it is not a methodologically adequate protocol or a complete PRISMA-P report. Its query, dates, criteria and methods must be replaced or deliberately reviewed. Saving eligibility changes executable criteria and starts a new screening version. To revise questions, use `slr questions save --file DRAFT.json --actor LABEL --expected-revision N`; the file contains `topic` and a `questions` array. A topic-only starting point is supported.
+
+Before **each** approval, read the current plan and save a new context file. Review that section's actual contents, then act against that exact inspected state:
+
+```bash
+slr plan status --db workspaces/review.sqlite --output workspaces/context-2.json
+slr plan approve-section --db workspaces/review.sqlite --actor Alice \
+  --context workspaces/context-2.json --section eligibility
+```
+
+Do the same for `sources`, `search`, `screening`, `extraction`, `appraisal` and `synthesis`; do not bulk-approve sections without reviewing them. `not-applicable --section ... --rationale ...` is available only for the last three sections. A later protocol save needs `--description` and `--rationale`. `revoke --target SEQUENCE --rationale ...` preserves the withdrawn decision in history. Status output includes private research context and is never overwritten by `--output`.
+
+After all sections are current, inspect a fresh context and use `slr plan approve-final`. Inspect another fresh context before executing a bounded pilot:
+
+```bash
+slr plan run --db workspaces/review.sqlite --actor Alice --context workspaces/context-for-pilot.json \
+  --kind pilot --pilot-limit 5 --output runs/pilot-1
+slr plan inspect-pilot --db workspaces/review.sqlite --run-id RUN_ID_FROM_PILOT_OUTPUT
+```
+
+Inspection verifies the recorded pilot manifest and artifacts and displays source-specific queries, caps, diagnostics and sample records. Read these and the session log. If the strategy fits, inspect a fresh context and record `slr plan review-pilot --db ... --actor ... --context ... --run-id ... --decision approve-strategy --notes ...`; otherwise choose `revise` and amend the protocol.
+
+Only then use `slr plan run --kind main` with another inspected context and new output directory. It registers results **in the same empty ledger**, preserving question, criteria, protocol and approval history. No provider request is made when approval prerequisites are missing. A changed protocol or revoked pilot review blocks registration. Existing nonempty corpora and decisions are preserved. Do not modify a review concurrently from CLI and a running dashboard; a stale workspace retrieval pointer is rejected before import rather than dropping records.
+
+Direct `slr --config ... --unregistered` and `slr pipeline --plan ... --unregistered` remain available for exploration. They are labelled unbound, and `slr review init` will not use them to create an approved workflow. Imports do not prove that an external systematic search was executed. Existing databases can still be opened and screened without fabricating approval.
+
+Empty-review publication uses a same-filesystem hard link to avoid overwriting another creator's database. This path was exercised on Linux/WSL; native Windows/macOS and filesystems without hard-link support remain acceptance work. If publication fails, the newly created staging directory is cleaned up and an existing destination is preserved.

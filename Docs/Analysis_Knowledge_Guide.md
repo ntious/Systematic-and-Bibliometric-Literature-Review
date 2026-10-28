@@ -72,3 +72,51 @@ A robust next version needs:
 7. Versioned amendments and impact review. New articles, AI suggestions or user feedback enter a draft curation queue; they cannot silently update accepted methodological knowledge.
 
 Future terminology mappings to STATO/OBI and RDF/OWL export should use verified term identifiers and record mapping scope, source version and licence attribution. A custom node label is not an authoritative ontology term.
+
+## Evaluate question-only recommendations
+
+Use a frozen catalogue and source-anchored questions to evaluate the current rules before revising them:
+
+```sh
+slr knowledge-evaluate predict --catalogue catalogue.json --cases cases.json --output predictions
+slr knowledge-evaluate score --predictions predictions/predictions.json --annotations annotations.json --output scores
+```
+
+Each case requires `case_id`, `question`, `cohort`, `discipline` and nonempty `anchors` (for example PDF page and original quotation). Only `question` enters the recommender. Each annotation requires the same case ID, distinct `observed_method_ids`, `annotator` and source `anchors`. Optional `outside_catalogue` records unsupported methods. Set `status` to `unresolved` with an empty observed-method list when classification is uncertain; that case stays in coverage counts but leaves the agreement denominator. Retain all inclusion/exclusion decisions separately.
+
+Outputs use fresh directories and SHA-256 manifests; existing bundles cannot be overwritten. These hashes detect accidental edits, not deliberate tampering. Preserve original predictions when correcting the cohort. Keep PDFs, extracted text, questions and annotations in private local storage such as ignored `outputs/`.
+
+Coverage measures whether a question receives any candidates. Observed-method overlap compares candidates with the annotated published methods; it does not establish accuracy or methodological suitability. The unranked catalogue has no top-k score. Use independent annotation and adjudication before claiming validation, and reserve fresh papers for later holdout evaluation. No evaluation command grants approval or executes the suggested analyses.
+
+## Compare AI with the knowledge base and published methods
+
+`slr knowledge-ai prepare --cases questions.json --output prepared` freezes one request per study's question set. Use explicit questions; keep objectives as a separately labelled experiment. Complete question subparts and verify quotations against source pages before freezing. Only question text enters provider input; source filenames, annotations and catalogue entries stay local. Tools and retrieval are disabled. Prior model exposure to a published question cannot be ruled out.
+
+Configure `OPENAI_API_KEY` in the process environment without sharing it in chat, and choose an available model explicitly:
+
+```sh
+slr knowledge-ai run --provider openai --plan prepared/plan.json --model YOUR_MODEL --output ai-run
+slr knowledge-ai compare --plan prepared/plan.json --run ai-run --baseline baseline/predictions.json --annotations annotations.json --output comparison
+```
+
+Generate `baseline/predictions.json` with `knowledge-evaluate predict` using exactly the prepared cases and a frozen catalogue. The AI proposes up to six methods per question set with rationale, required data, uncertainty and contraindications. Its output is unconstrained by catalogue method names. The comparison presents AI suggestions, catalogue candidates and provisionally observed published methods side by side, plus a review worksheet. Free-text method mapping and suitability require review; the command does not silently treat name differences as disagreement or report AI accuracy. The six-suggestion cap differs from the unbounded rule-based candidate list, so counts are not equivalent rankings.
+
+A completed run can resume without repeating completed calls. An existing failed/incomplete request stops the run; inspect provider usage before explicitly starting another experiment. Requests, raw responses, requested/returned model, usage and hashes are saved locally. API calls may incur charges. Never promote suggestions into the ontology automatically: verify methodological sources, record prerequisites and exclusions, obtain researcher approval, version the change, and evaluate it on fresh holdout papers. These exposed examples are development material after curation.
+
+The adapter uses the [official structured-output interface](https://developers.openai.com/api/docs/guides/structured-outputs). Structured output constrains format; it does not establish scientific correctness.
+
+### Local and cloud model routes
+
+The design supports two routes: locally run open models, and explicitly selected cloud providers. The experiment currently implements Ollama for installed local models and OpenAI for cloud calls. The Settings wizard also implements Anthropic, Google, Mistral and DeepSeek connections with provider-specific requests and model discovery; live access depends on account credentials. AI assistance remains optional.
+
+For a locally installed model, run:
+
+```sh
+slr knowledge-ai run --provider ollama --plan prepared/plan.json --model YOUR_EXACT_INSTALLED_TAG --output local-run
+```
+
+The default Ollama endpoint is `http://127.0.0.1:11434`; `--base-url` accepts loopback origins only. No API key is required, no models are downloaded automatically, and the app never falls back to cloud generation. The model tag and installed digest are captured, with a separate output directory per provider/model. Cloud-backed Ollama tags/remote metadata are rejected; configure the Ollama server with cloud features disabled for offline use. Local runtime/hardware and model licensing remain the user's deployment choices. The dashboard Settings wizard provides resource-aware model selection and managed installation.
+
+Both routes use the same question-only prompt/schema and comparison procedure. Record provider/model-specific differences in support, truncation and defaults. See the [Ollama chat API](https://docs.ollama.com/api/chat) and [installed-model listing](https://docs.ollama.com/api/tags).
+
+For a frozen batch experiment, optional `--continue-on-error` records failed cases and moves on without retrying them. Previously failed requests stay failed. The run summary distinguishes accepted outputs from generation/validation failures. Comparison tables retain those failures explicitly; they are not abstentions or usable method predictions. Keep failed raw responses for auditing, and do not repair their contents or change the prompt mid-experiment.

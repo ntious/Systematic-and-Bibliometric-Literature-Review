@@ -6,7 +6,7 @@
 <meta name="description" content="LitAtlas — a focused workspace for systematic literature reviews.">
 <title>LitAtlas · Research, in focus</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%237b61dd'/%3E%3Cpath d='M9 9h6v14H9zm8 0h6v14h-6z' fill='white'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>
+<link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script><script src="/settings.js" defer></script><script src="/question_frameworks.js" defer></script><script src="/questions.js" defer></script><script src="/protocol_helpers.js" defer></script><script src="/protocol.js" defer></script><script src="/verification.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to workspace</a>
@@ -21,6 +21,7 @@
 <div class="shell">
 <header class="topbar"><div class="breadcrumbs"><button class="icon-button mobile-menu" id="menu-button" aria-label="Toggle navigation">☰</button><span>Workspace</span><span class="crumb-slash">/</span><strong id="crumb">Overview</strong></div><div class="topbar-actions"><button class="search-trigger" id="search-trigger"><span class="search-icon">⌕</span><span>Search your workspace</span><kbd>⌘ K</kbd></button><button class="icon-button" id="theme-toggle" aria-label="Switch color theme"></button><span class="header-divider"></span><span class="avatar avatar-ink" aria-label="Researcher">R</span></div></header>
 <div id="demo-banner" class="demo-banner" hidden><span>✳</span><div><strong>A space to explore.</strong> You’re viewing synthetic demonstration data.</div><button id="demo-new">Start your own review <span>↗</span></button></div>
+<section id="ai-activity" aria-label="AI activity" aria-live="polite" hidden></section>
 <main id="main" tabindex="-1"><div class="loading-state"><span class="spinner"></span><h2>Opening your workspace</h2><p>Bringing your research into focus.</p></div></main>
 <footer><span><span class="footer-dot"></span> LitAtlas · Local research workbench</span><span id="footer-status">Your decisions stay in your hands.</span></footer>
 </div>

@@ -53,7 +53,7 @@ python -m pip install -e .
 slr --config configs/example_review.toml --fixture Examples/demo_records.json --output outputs/demo
 
 # Live search (network access required):
-slr --config configs/example_review.toml --output outputs/live-review
+slr --config configs/example_review.toml --unregistered --output outputs/live-review
 ```
 
 Every run requires a new output directory. Edit the TOML configuration to choose the query, sources, publication years, and maximum retrieved records per source. For OpenAlex cursor pagination, set `OPENALEX_API_KEY` in your environment. Credentials are sent in an authorization header, never stored in configuration or logs. Set the optional `mailto` field to identify your requests. Keys are not required for Crossref. See the official [OpenAlex authentication documentation](https://help.openalex.org/api/authentication/) and [Crossref API documentation](https://www.crossref.org/documentation/retrieve-metadata/rest-api/).
@@ -115,7 +115,7 @@ CSV accepts normalized columns and common Scopus/Web of Science headers; RIS sup
 ## Search PubMed
 
 ```bash
-slr --config configs/pubmed_review.toml --output outputs/pubmed
+slr --config configs/pubmed_review.toml --unregistered --output outputs/pubmed
 ```
 
 The PubMed adapter saves the ESearch response, query translation and EFetch XML batches. Requests run at one per second with the shared retry policy. The client caps each PubMed query at 10,000 records; use narrower date partitions or NCBI EDirect for larger searches. Configure your contact email using `mailto`. See [NCBI E-utilities documentation](https://www.ncbi.nlm.nih.gov/books/NBK25499/).
@@ -189,7 +189,7 @@ Workshop contact: Dr. Nti, ntiik@ucmail.uc.edu, University of Cincinnati, USA.
 
 ### Practical research pipeline
 
-Run multi-query searches through the dashboard or `slr pipeline --plan PLAN.json --output NEW_DIRECTORY`. The application preserves per-session Markdown error/lesson reports and raw retrieval evidence. See [Pipeline guide](Docs/Pipeline_Guide.md) for usage; private practical-test logs remain local and ignored.
+Run multi-query searches through the dashboard or `slr pipeline --plan PLAN.json --unregistered --output NEW_DIRECTORY`. The application preserves per-session Markdown error/lesson reports and raw retrieval evidence. See [Pipeline guide](Docs/Pipeline_Guide.md) for usage; private practical-test logs remain local and ignored.
 
 ### Corpus summaries and ranked venues
 
@@ -203,3 +203,14 @@ LitAtlas's **Research analytics** view reports papers, observed authors/affiliat
 `slr review agreement` reports paired independent decisions, observed agreement, Cohen’s kappa and PABAK. Pilot calibration and undefined statistics are handled explicitly. Reviewer labels and the local database are not an access-control or blinding system. See [Screening guide](Docs/Screening_Guide.md).
 
 SCImago CSV import supplies SJR, category/best quartiles and captured journal H-index with source footnotes. Optional official Elsevier/Clarivate lookups require approved access and server credentials. Missing metrics remain missing. See [Corpus analytics](Docs/Corpus_Analytics_Guide.md).
+
+### Optional AI setup
+
+Open **Settings** in the dashboard to choose local AI or a cloud provider. The local wizard checks this device’s memory, CPU and storage, recommends models that fit, and downloads/configures a selected model. Cloud setup offers five providers, API-key entry and available-model selection. AI proposals always require researcher review. See [guided setup](Docs/Dashboard_Guide.md#guided-ai-setup).
+
+
+### Review-bound command-line workflow
+
+Use `slr review create` to start before retrieval, `slr questions` for saved topic/question drafts and explicit approval, and `slr plan` for protocol sections, pilot review and authorized searches. Each plan action takes a status/context file you inspected, so stale questions, criteria or versions are rejected. Main-search registration retains the same review database and history. See [Protocol guide](Docs/Protocol_Guide.md#review-bound-cli-workflow).
+
+Standalone live commands now require `--unregistered`; their results are explicitly unbound and cannot initialize an approved review through `slr review init`. Offline fixtures remain available. Existing review databases remain accessible; no retrospective approvals are inferred.

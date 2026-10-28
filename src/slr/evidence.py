@@ -126,7 +126,19 @@ def _settings(conn):
 
 def scope_current(scope):
     try:
-        return digest(screening_snapshot(scope['screening_path'])) == scope['snapshot_sha256']
+        frozen = scope['snapshot']
+        if digest(frozen) != scope['snapshot_sha256']:
+            return False
+        current = screening_snapshot(scope['screening_path'])
+        # Derived policy/reporting fields do not change the underlying screening evidence.
+        def content(value):
+            value = json.loads(canonical(value))
+            for key in ('screening_access', 'screening_deviations'):
+                value.pop(key, None)
+            for key in ('deduplication_method', 'deduplication_notice'):
+                value['prisma'].pop(key, None)
+            return value
+        return content(current) == content(frozen)
     except (OSError, ValueError, TypeError, sqlite3.DatabaseError):
         return False
 
@@ -339,7 +351,7 @@ def import_ai(database, envelope):
     request = get_request(database, envelope.get('request_id'))
     if envelope.get('request_sha256') != request['request_sha256']:
         raise ValueError('AI response request hash mismatch')
-    producer = {k: envelope.get(k) for k in ('provider', 'model', 'generated_utc', 'request_sha256', 'response_id', 'usage')}
+    producer = {k: envelope.get(k) for k in ('provider', 'model', 'generated_utc', 'request_sha256', 'response_id', 'usage', 'model_digest', 'prompt_version')}
     producer['method'] = 'ai'
     packet = request['packet']
     return submit(database, packet['task'], packet['data'].get('record_id'), envelope.get('output'), producer,

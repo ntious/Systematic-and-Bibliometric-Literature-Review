@@ -286,3 +286,44 @@ This comparison consolidates the eleven-stage proposal against established guida
 ## Analysis knowledge base — implementation increment, 2026-10-23
 
 The researcher authorised a source-backed ontology/knowledge base for cross-disciplinary question-to-analysis recommendations. Initial implemented service: `slr knowledge init/catalogue/recommend`, dedicated SQLite graph, 32 method/display options and 13 source records. Matching rules remain local unvalidated hypotheses, not published facts. All execution adapters are marked not integrated, all recommendations remain unapproved, and no screening/evidence ledger is modified. See `Docs/Analysis_Knowledge_Guide.md` for source limitations, CLI examples and the validation backlog. Full dashboard/extraction binding, richer question profiles, expert validation, formulas and analysis execution remain pending. No other users' conversations are available or used as evidence.
+
+## Book-informed proposals — 2026-10-23
+
+See `Docs/Book_Design_Review.md` for a review of the user-supplied textbook extract. Candidate additions include a purpose/audience/resource brief, review profiles, mixed-method strands, typed methodological sources, contextual teaching support and question-to-claim coverage. These are proposals for consideration, not new agreed requirements. Only the front matter, introductory chapter and references are present in the supplied 113-page PDF; later chapters listed in its contents have not been reviewed.
+
+## Additional supplied documents — 2026-10-23
+
+See `Docs/Additional_Document_Design_Review.md` for the eHealth methods chapter and Industry 4.0 review example. Further proposals concern iterative workflows, source conflicts, objective-to-field links, conflicting counts, acquisition limits, date policies, attribution of method mentions and origins of figures. The engineering review is now a development case, not unseen validation data. No new methods or source assertions have been automatically promoted into the knowledge database.
+
+The Lamé introduction and Metaverse definition review were also inspected. A consolidated register in `Docs/Literature_Informed_Action_Backlog.md` now contains LIT-01 through LIT-14 with priorities, suggested future ownership, dependencies and acceptance criteria. Suggested ownership has not dispatched work. These documents are development material and remain separate from the forthcoming held-out review sample. Later additions remain proposals unless already agreed elsewhere in this plan.
+
+Further reading: Pollock/Berge and Chigbu et al. reviewed locally on 2026-10-23. The action register now includes LIT-15–18 for stakeholder relevance, result-selection rules, evidence-linked gaps and search/extraction semantics. Claim-level concerns remain pending curation; no knowledge rules automatically changed.
+
+## Implementation update — 2026-10-24: topic/question workspace
+
+Step 2 now has a dashboard workspace (`Topic & questions`) backed by `slr.questions`: manual/topic-only drafts, built-in versioned generation/refinement instructions, explicit stage opt-in, provider/model-bound cloud consent, individual proposal accept/edit/reject, final human approval and downloadable contribution history. AI response arrival does not alter the draft or approval. Subsequent draft changes require renewed approval. Request input, rationale, provider/model, output, actor labels and timestamps remain inspectable. Imported/search-replaced corpora carry forward this review-level history.
+
+Candidate question acceptance explicitly offers add or replace; replaced wording remains in history. Researchers can also edit/remove earlier wording before final approval. The original request and candidate are shown side by side; word-level diff highlighting remains a follow-up. Existing review name/question values are offered as a starting draft and are not automatically approved. Online literature exploration is not implemented in this stage: generation/refinement has no browsing tools and must not claim novelty verification. Exact protocol/pilot/main-search dependency gates remain pending; this is not a claim that step 3 or step 4 is enforced.
+
+Prompt contracts live in application code and are sent automatically with the saved researcher input; users need not write prompts. The current provider selection remains usable while the final embedded/custom-model interface is discussed. No fine-tuning or arbitrary-model installer was introduced.
+
+Reviewer follow-up RC-R4 is specified in `platform_enhancement_plan.md`, section 9.
+
+
+## Implementation update — 2026-10-24: guided protocol and pilot increment
+
+The dashboard now implements the seven-section editor over the existing protocol ledger, individual approvals and justified N/A for extraction/appraisal/synthesis, and a separate exact-version final approval. Approval checks include the question approval and criteria actually shown to the actor. A changed draft never gains approval by saving or accepting an AI proposal. Changed eligibility is synchronized to an appended screening-criteria version; earlier screening decisions remain historical.
+
+Protocol approval authorizes a bounded pilot. Pilot runs are separate from the captured corpus, expose query/source/date/limit diagnostics and sample records, and require a recorded researcher strategy review before a main search. The dashboard main registration path refuses unbound live runs, checks authorization before and during retrieval and again before registration, and preserves question/protocol/plan/criteria history across corpus replacement. Existing/imported corpora remain accessible with explicit provenance labels.
+
+The built-in per-section AI contract is `protocol-section-v3`, using native typed replacement values. Section input is treated as data; no browsing/novelty claims are permitted. Dates are entered manually. Provider/model/hash identity, stage opt-in, cloud consent, allowed fields, type checks, individual decisions, unchanged-value handling and failure records are implemented. Actual local Llama validation used synthetic input; it does not establish the suitability of proposed methods.
+
+Remaining: CLI approval-management parity; governed reruns/combined intake for an existing nonempty corpus; source-backed online exploration; PDF collection intake; word-level diffs; native-platform acceptance tests and broader cross-domain/model validation. These updates supersede earlier pending-status descriptions only for the implemented dashboard scope. The seven approvals do not replace full PRISMA-P reporting or methodological review. Reviewer IDs are now RC-PROTOCOL-1 (this increment) and RC-PROTOCOL-2 (CLI/acceptance follow-up), avoiding the older RC-R4 topic-exploration ID collision.
+
+## Implementation update — CLI parity, 2026-10-24
+
+The next increment adds `slr review create`, `slr questions` and `slr plan` so a review can exist, be drafted and approved before retrieval. Plan actions bind to an inspected context file rather than silently reading newer approval identities. Pilots remain separate; CLI pilot inspection verifies recorded artifacts before human strategy review. Main searches register transactionally into the same empty ledger, preserving identity and every prior history.
+
+Standalone live CLI commands now require `--unregistered` and remain unbound. `slr review init` refuses live/unregistered/approved snapshots that bypass or discard the governed history. Existing databases and imported external libraries remain accessible and explicitly unverified; stricter intake screening requirements are still a separate migration decision. Low-level Python retrieval functions remain unbound utilities. Native-platform hard-link publication and governed nonempty-corpus reruns remain validation/design work.
+
+The independent reviewer proposal was reconciled in enhancement-plan section 10, including D1–D6, the RC-R4 ID collision, and two reproduced importer findings assigned for repair before integration. See the Protocol Guide for command examples.

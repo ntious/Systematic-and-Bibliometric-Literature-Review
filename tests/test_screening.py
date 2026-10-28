@@ -1,3 +1,4 @@
+from conftest import defer_protocol
 import json
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
@@ -19,6 +20,7 @@ def ledger(tmp_path):
     run('configs/example_review.toml', folder, 'Examples/demo_records.json')
     db = tmp_path / 'review.sqlite'
     assert s.initialize(db, folder, 'Example review', ['alice', 'bob'], 'carol', 'Example criteria') == 2
+    defer_protocol(db)
     return db
 
 
@@ -121,6 +123,7 @@ def test_new_criteria_resets_state_but_preserves_audit(ledger):
     include_title(ledger)
     retrieve(ledger)
     assert s.revise_criteria(ledger, 'Revised criteria', expected_version=1) == 2
+    defer_protocol(ledger)
     data = s.snapshot(ledger)
     assert data['prisma']['title_pending'] == 2 and data['prisma']['reports_sought'] == 0
     assert len(data['events']) == 3 and len(data['criteria_history']) == 2

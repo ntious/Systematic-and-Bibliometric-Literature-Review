@@ -1,0 +1,23 @@
+{
+  "title": "Synthetic example of a governed review workflow",
+  "review_type": "systematic review",
+  "stage": "planned",
+  "eligibility": {
+    "study_characteristics": "Include empirical evaluations; exclude opinion-only reports.",
+    "report_characteristics": "Include English-language research reports. Document other restrictions before approval."
+  },
+  "publication_period": {
+    "from": "2020-01-01",
+    "to": "2026-10-24",
+    "basis": "Illustrative dates only; the researcher must choose an appropriate period."
+  },
+  "information_sources": [{"name": "Crossref", "kind": "automated", "adapter": "crossref"}],
+  "keywords": ["synthetic example"],
+  "search_strategy": {"database": "Crossref", "strategy": "Illustrative free-text query; replace and pilot it before real use."},
+  "searches": [{"adapter": "crossref", "queries": ["synthetic example learning"], "max_records_per_source": 10}],
+  "selection_process": "Two reviewers screen independently; the assigned adjudicator resolves conflicts with recorded reasons.",
+  "data_items": "Study design, setting, evidence relevant to the research questions, outcomes and limitations.",
+  "data_collection_process": "Extract source-linked information and independently verify it. Record missing or unclear information explicitly.",
+  "risk_of_bias": "Select and document a tool appropriate to the actual study designs; do not infer methodological adequacy from this example.",
+  "synthesis": {"quantitative": false, "criteria": "Group studies only where comparisons are meaningful.", "non_quantitative": "Structured narrative synthesis with links to supporting studies."}
+}

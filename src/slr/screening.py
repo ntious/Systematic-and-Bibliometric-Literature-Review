@@ -178,16 +178,67 @@ def start_pilot(database, actor, size, *, seed=None, expected_version):
         return sample
 
 
+def _guided_protocol(conn):
+    """True once a guided protocol was saved; legacy and standalone-protocol reviews keep direct criteria revision."""
+    if not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='plan_events'").fetchone():
+        return False
+    return bool(conn.execute("SELECT 1 FROM plan_events WHERE kind='protocol-save' LIMIT 1").fetchone())
+
+
 def revise_criteria(database, text, *, expected_version):
     text = _text(text, 'Criteria')
     with connect(database) as conn:
         _, version = _context(conn)
         _check_version(version, expected_version)
+        if _guided_protocol(conn):
+            raise ValueError('This review has a guided protocol. Amend eligibility in Review protocol, section 1: saving it '
+                             'updates the screening criteria, so the two cannot drift apart.')
         digest = sha256(text.encode()).hexdigest()
         if conn.execute('SELECT 1 FROM criteria WHERE sha256=?', (digest,)).fetchone():
             raise ValueError('Criteria text already exists; provide a distinct revision')
         conn.execute('INSERT INTO criteria VALUES (?,?,?,?)', (version + 1, text, digest, now()))
         return version + 1
+
+
+def _screening_gate(conn):
+    from . import review_plan as rp, questions
+    state = rp._state(conn)
+    origin = json.loads(conn.execute('SELECT origin FROM review').fetchone()[0])
+    binding = {'ledger_id': state['ledger_id'], 'question_draft_sha256': questions.digest(state['question_draft']), 'criteria_sha256': state['criteria']['sha256'],
+               'protocol_sha256': state['protocol_sha256'], 'question_approval': state['question_approval'],
+               'origin_sha256': questions.digest(origin)}
+    exceptions = [e for e in state['history'] if e['kind'] == 'screening-exception']
+    revoked = {e['content']['target_sequence'] for e in state['history'] if e['kind'] == 'screening-exception-revoked'}
+    exception = next((e for e in reversed(exceptions) if e['sequence'] not in revoked and e['content']['binding'] == binding), None)
+    return {'allowed': bool(state['final_current'] or exception),
+            'basis': 'approved-protocol' if state['final_current'] else 'protocol-deferred' if exception else 'blocked',
+            'exception': exception, 'binding': binding,
+            'notice': 'Imported search history is not verified. Existing decisions remain readable; new decisions require a current protocol approval or a recorded exception.'}
+
+
+def screening_access(database, actor=None, rationale=None, *, expected_version=None, expected_binding=None, revoke=None):
+    """Inspect access or record an adjudicator's explicit, version-bound deviation."""
+    from . import review_plan as rp
+    with connect(database) as conn:
+        gate = _screening_gate(conn)
+        if actor is not None:
+            review, version = _context(conn)
+            _check_version(version, expected_version)
+            if actor != review['adjudicator']:
+                raise ValueError('Only the adjudicator may record a protocol-deferred exception')
+            if expected_binding != gate['binding']:
+                raise ValueError('Screening context changed; reload before recording the exception')
+            rationale = _text(rationale, 'Exception rationale')
+            if len(rationale) < 20:
+                raise ValueError('Explain the protocol deviation in at least 20 characters')
+            if revoke is not None:
+                if not gate['exception'] or gate['exception']['sequence'] != revoke:
+                    raise ValueError('No matching current exception')
+                rp._append(conn, 'screening-exception-revoked', actor, {'target_sequence': revoke, 'rationale': rationale})
+            else:
+                rp._append(conn, 'screening-exception', actor, {'binding': gate['binding'], 'rationale': rationale,
+                    'notice': 'Protocol deferred; this exception is a reported deviation, not protocol approval or verification of external search.'})
+        return _screening_gate(conn)
 
 
 def decide(database, record_id, actor, stage, value, reason='', adjudicate=False, *, expected_version):
@@ -201,6 +252,8 @@ def decide(database, record_id, actor, stage, value, reason='', adjudicate=False
         _check_version(version, expected_version)
         if actor not in ([review['adjudicator']] if adjudicate else review['reviewers']):
             raise ValueError('Actor is not assigned to this role')
+        if not _screening_gate(conn)['allowed']:
+            raise ValueError('Screening blocked: approve the protocol or record an adjudicator protocol-deferred exception')
         events = _events(conn, record_id, version)
         if stage == 'title' and not adjudicate:
             pilot = _pilot(conn, version, review['reviewers'])
@@ -303,10 +356,14 @@ def snapshot(database, reviewer=None):
                   'exclusion_reasons': dict(Counter(r['fulltext_reason'] for r in assessed if r['fulltext'] == 'exclude')),
                   'reports_included': len(included), 'studies_included': len(study_ids),
                   'included_reports_without_study': sum(not r['study_id'] for r in included)}
+        method = json.loads(review['origin']).get('deduplication', 'doi-v1')
+        prisma['deduplication_method'] = method
+        prisma['deduplication_notice'] = ('Matching normalized DOI and exact source/ID' if method == 'doi-or-source-id-v1' else 'Matching normalized DOI' if method == 'doi-v1' else 'Unknown deduplication method') + '; no fuzzy title/author matching. Cross-export records without matching identifiers may remain; counts can overstate distinct reports.'
         prisma['complete'] = not any(prisma[k] for k in ('title_pending', 'title_conflicts', 'retrieval_pending', 'eligibility_pending', 'eligibility_conflicts', 'included_reports_without_study'))
         return {'review_id': review['id'], 'name': review['name'], 'criteria_version': version,
                 'criteria': dict(conn.execute('SELECT * FROM criteria WHERE version=?', (version,)).fetchone()),
-                'origin': json.loads(review['origin']), 'records': rows, 'prisma': prisma,
+                'origin': json.loads(review['origin']), 'screening_access': _screening_gate(conn),
+                'screening_deviations': [dict(e) | {'content': json.loads(e['content'])} for e in conn.execute("SELECT * FROM plan_events WHERE kind IN ('screening-exception','screening-exception-revoked') ORDER BY sequence")], 'records': rows, 'prisma': prisma,
                 'agreement': agreement, 'pilot': pilot,
                 'criteria_history': [dict(r) for r in conn.execute('SELECT * FROM criteria ORDER BY version')],
                 'events': [dict(e) for e in conn.execute('SELECT * FROM events ORDER BY sequence')]}

@@ -106,3 +106,12 @@ python Scripts/screening_demo.py --output outputs/screening-demo
 ```
 
 This synthetic demonstration screens both records, includes one report linked to one study, excludes the other at title screening, and exports a complete flow. It uses no network or real research decisions.
+
+
+### Screening authorization for imported and existing collections
+
+New title/full-text decisions and adjudications require a current final protocol approval. This rule is checked transactionally in the screening service, including direct Python, CLI and dashboard calls. Historical records remain readable/exportable; they are not retrospectively approved. Importing files does not verify their external search history.
+
+If a retrospective or teaching collection must proceed before protocol approval, the assigned adjudicator can record a **protocol-deferred exception** with a substantive rationale. The screening page shows the current criteria and offers this action. It is a reported deviation, not an approval. Changes to the corpus origin, topic/question draft or approval, protocol content, or criteria invalidate it. Revoking it blocks further decisions and preserves all earlier records. Local actor labels are not authenticated identities.
+
+CLI users first inspect and save the output of `slr review screening-access --db review.sqlite`. Then use `slr review screening-access --db review.sqlite --actor ADJUDICATOR --version 1 --context inspected-access.json --rationale "Explain why protocol approval is deferred..."`. Add `--revoke EVENT_SEQUENCE` to revoke the current exception with a rationale and fresh inspected context. There is no automatic exception for imported, legacy or fixture corpora. Synthetic teaching demos record an explicit labelled exception.

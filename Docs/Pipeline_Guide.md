@@ -7,7 +7,7 @@ Follow progress in the dashboard footer. After refresh, the review shows a **Dow
 ## CLI entry points
 
 ```
-slr pipeline --plan configs/example_pipeline.json --output outputs/new-pipeline-session
+slr pipeline --plan configs/example_pipeline.json --unregistered --output outputs/new-pipeline-session
 slr pipeline inspect --session outputs/new-pipeline-session
 ```
 
@@ -76,3 +76,8 @@ slr pipeline compare-calibration --baseline outputs/baseline-calibration --revis
 The software rejects mismatched policies or changed artifacts. If a query revision loses illustrative known-item coverage, the report is marked `needs-investigation` and advises against automatic adoption. It does not infer a measured recall decrease from a non-independent reference list. When the revision belongs to an application session, its Markdown session log also records the comparison.
 
 See [Local_Data_Policy.md](Local_Data_Policy.md) for the repository/package privacy boundary.
+
+
+## Approved reviews and standalone exploration
+
+`slr pipeline --plan ... --unregistered` explicitly runs standalone exploration and records unbound provenance. The low-level `run_plan` service also produces unbound output unless called within the review-bound authorization service. It does not approve research decisions. To run the approved protocol through a pilot and then a main search, use `slr plan run`; see [Protocol guide](Protocol_Guide.md#review-bound-cli-workflow). Raw/unregistered live results cannot be passed to `slr review init` as an approved review. External reference libraries remain a separate, labelled import route.

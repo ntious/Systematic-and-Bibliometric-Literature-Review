@@ -128,7 +128,7 @@ def inspect_session(folder):
         raise
 
 
-def run_plan(plan, output, progress=None):
+def run_plan(plan, output, progress=None, *, before_request=None):
     """Return a verified aggregate run; preserve failed subruns and report partial coverage."""
     from .cli import run
     from .bibliometrics_cli import analyze
@@ -146,6 +146,8 @@ def run_plan(plan, output, progress=None):
         records, searches, failures = [], [], 0
         tasks = [(source, query) for query in plan['queries'] for source in plan['sources']]
         for index, (source, query) in enumerate(tasks, 1):
+            if before_request is not None:
+                before_request()
             stage = f'retrieval {index}/{len(tasks)}: {source}'
             sub = root/f'search-{index:02d}'
             config = {'query': query, 'sources': [source], 'max_records_per_source': plan.get('max_records_per_source',100)}
@@ -186,7 +188,7 @@ def run_plan(plan, output, progress=None):
         if date_audit['uncertain_dates']:
             event('date validation', 'warning', 'Uncertain or invalid publication dates remain for human verification.', evidence='retrieval/date-audit.json', remedy='Check original publication dates; partial dates crossing a boundary are retained, never guessed.')
         write_json(aggregate/'search-log.json', searches)
-        write_json(aggregate/'manifest.json', {'status': 'complete', 'mode': 'live-pipeline', 'version': __version__,
+        write_json(aggregate/'manifest.json', {'status': 'complete', 'mode': 'live-pipeline', 'protocol_approval':'unbound', 'version': __version__,
             'started_utc': journal.data['started_utc'], 'finished_utc': now(), 'config': plan,
             'search_outcome': 'partial' if failures else 'complete', 'searches': searches,
             'session_id': journal.data['session_id'], 'deduplication':'doi-or-source-id-v1',
@@ -294,7 +296,9 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--plan',required=True,help='JSON plan: queries, sources, years and maximum per query/source')
     parser.add_argument('--output',required=True,help='New session directory')
+    parser.add_argument('--unregistered',action='store_true',help='Explicit standalone pipeline, not an approved review search')
     args=parser.parse_args(argv)
+    if not args.unregistered:parser.error('Use slr plan run for an approved review, or explicitly select --unregistered')
     try:
         run=run_plan(json.loads(Path(args.plan).read_text()),args.output,
                      progress=lambda event: print(event['stage']+': '+event['message'],flush=True))

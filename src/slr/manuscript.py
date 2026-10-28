@@ -8,7 +8,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 
-from . import protocol, screening
+from . import protocol, screening, ai_disclosure
 from .review_cli import agreement_line, flow_svg
 
 
@@ -20,7 +20,7 @@ def digest(value):
     return sha256(canonical(value)).hexdigest()
 
 
-def capture(database, run=None):
+def capture(database, run=None, evidence_database=None):
     """Read through SQLite backup, including committed WAL data; never write the source."""
     path = Path(database).resolve(strict=True)
     with tempfile.TemporaryDirectory(prefix='litatlas-report-') as temporary:
@@ -39,6 +39,7 @@ def capture(database, run=None):
                         raise ValueError('Protocol content does not match its recorded hash')
         review = screening.snapshot(frozen)
         planned = protocol.state(frozen)
+        ai = ai_disclosure.capture(frozen, evidence_database)
     if sha256(review['criteria']['text'].encode('utf-8')).hexdigest() != review['criteria']['sha256']:
         raise ValueError('Criteria content does not match its recorded hash')
     verification = 'embedded manifest only; retrieval files were not reverified'
@@ -48,7 +49,7 @@ def capture(database, run=None):
             raise ValueError('Retrieval run does not match the screening ledger origin')
         verification = 'retrieval files reverified against the embedded manifest'
     return {'schema': 'litatlas-methods-v1', 'screening': review, 'protocol': planned,
-            'retrieval_verification': verification}
+            'retrieval_verification': verification, 'ai_disclosure': ai}
 
 
 def render(inputs):
@@ -81,6 +82,14 @@ def render(inputs):
     for stage in ('title', 'fulltext'):
         stats = review['agreement'][stage]
         lines += [claim(agreement_line(stage, stats) + (f"; {stats['kappa_undefined_reason']}" if stats['pairs'] and stats.get('kappa_undefined_reason') else ''), f'/screening/agreement/{stage}', stats), '']
+    lines += [counts.get('deduplication_notice', 'Deduplication metadata unavailable in this historical snapshot.'), '',
+              '## Screening authorization and deviations', '',
+              json.dumps(review.get('screening_access', {'basis':'historical snapshot; authorization unavailable'}), ensure_ascii=False, sort_keys=True), '',
+              'Recorded protocol-deferred deviations (including historical/revoked): ' + json.dumps(review.get('screening_deviations', []), ensure_ascii=False, sort_keys=True), '']
+    if inputs.get('ai_disclosure'):
+        lines += [ai_disclosure.markdown(inputs['ai_disclosure']), '']
+    else:
+        lines += ['AI-use history unavailable in this historical snapshot; this does not establish no AI use.', '']
     planned = inputs['protocol']
     lines += [claim(f"The ledger contains {planned['version']} saved protocol versions. Protocol declarations describe plans and require comparison with observed practice.", '/protocol/history', planned['history']), '',
               'Retrieval verification: ' + inputs['retrieval_verification'] + '.', '',
@@ -93,7 +102,8 @@ def render(inputs):
         {'item': '24c', 'topic': 'Protocol amendments', 'status': 'manual comparison required', 'pointer': '/protocol/history'},
     ]
     provenance = {'schema': inputs['schema'], 'inputs_sha256': digest(inputs), 'claims': claims}
-    return {'methods.md': '\n'.join(lines),
+    return {'ai-disclosure.json': json.dumps(inputs.get('ai_disclosure', {'notice':'Historical snapshot: AI-use metadata unavailable'}), ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+            'methods.md': '\n'.join(lines),
             'report-inputs.json': json.dumps(inputs, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
             'report-provenance.json': json.dumps(provenance, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
             'prisma-coverage.json': json.dumps({'notice': 'Selected PRISMA 2020 items only; availability is not compliance. All other items require manual completion.', 'source': 'https://www.prisma-statement.org/prisma-2020', 'items': coverage}, indent=2) + '\n',
@@ -130,12 +140,13 @@ def main(argv=None):
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--db', help='Screening SQLite ledger (read only)')
     group.add_argument('--snapshot', help='Previously exported report-inputs.json with companion provenance')
+    parser.add_argument('--evidence-db', help='Optional associated evidence ledger for extraction/appraisal AI disclosure')
     parser.add_argument('--run', help='Optionally reverify the original retrieval directory')
     parser.add_argument('--output', required=True, help='New private output directory')
     args = parser.parse_args(argv)
     try:
         if args.snapshot:
-            if args.run:
+            if args.run or args.evidence_db:
                 raise ValueError('--run requires --db')
             path = Path(args.snapshot)
             inputs = json.loads(path.read_text(encoding='utf-8'))
@@ -143,7 +154,7 @@ def main(argv=None):
             if digest(inputs) != provenance['inputs_sha256']:
                 raise ValueError('Report snapshot hash mismatch')
         else:
-            inputs = capture(args.db, args.run)
+            inputs = capture(args.db, args.run, args.evidence_db)
         folder = export(inputs, args.output)
     except (ValueError, OSError, sqlite3.Error, KeyError, TypeError) as exc:
         parser.exit(1, f'slr report: {exc}\n')

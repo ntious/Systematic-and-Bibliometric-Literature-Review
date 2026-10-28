@@ -16,11 +16,16 @@ class ModelError(ValueError):
 
 
 def run_openai(database, request_id, model, output, *, max_output_tokens=4096):
+    return run_packet(get_request(database, request_id), model, output, max_output_tokens=max_output_tokens)
+
+
+def run_packet(packet, model, output, *, max_output_tokens=4096, api_key=None):
+    """Run an application-built packet; callers validate task-specific output."""
+    request_id = packet['request_id']
     model = text(model, 'Model identifier')
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 100000:
         raise ValueError('max_output_tokens must be 1–100000')
-    packet = get_request(database, request_id)
-    key = os.environ.get('OPENAI_API_KEY')
+    key = api_key or os.environ.get('OPENAI_API_KEY')
     if not key:
         raise ValueError('Set OPENAI_API_KEY in the environment before running a model')
     folder = Path(output)

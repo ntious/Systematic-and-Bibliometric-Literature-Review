@@ -17,9 +17,8 @@ from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 import zipfile
 
-from . import __version__, screening, evidence
+from . import __version__, screening, evidence, questions, review_plan
 from .bibliometrics import descriptive_summary, networks
-from .cli import run as run_search
 from .dashboard_demo import FRAMEWORK, create_demo
 from .evidence_cli import export_evidence
 from .imports import import_files
@@ -42,6 +41,8 @@ class Workspace:
         self.registry = self.root / 'workspace.json'
         self.lock = RLock()
         self.executor = ThreadPoolExecutor(max_workers=2)
+        from .ai_setup import AISettings
+        self.ai = AISettings(self.root, self.executor)
         self.jobs_path = self.root / 'jobs.json'
         self.jobs = json.loads(self.jobs_path.read_text()) if self.jobs_path.exists() else {}
         for job in self.jobs.values():
@@ -140,6 +141,7 @@ class Workspace:
         state = screening.snapshot(entry['screening_db'])
         with sqlite3.connect(Path(entry['screening_db']).resolve().as_uri() + '?mode=ro', uri=True) as conn:
             reviewers, adjudicator = conn.execute('SELECT reviewers,adjudicator FROM review').fetchone()
+            criteria_managed_by_protocol = screening._guided_protocol(conn)
         records = [Record(**r['metadata']) for r in state['records']]
         evidence_summary = None
         if entry.get('evidence_db'):
@@ -150,7 +152,7 @@ class Workspace:
         events = [{'id': r['sequence'], 'actor': r['actor'], 'record_id': r['record_id'], 'kind': r['kind'],
                    'stage': r['stage'], 'value': r['value'], 'created_utc': r['created_utc']} for r in state['events'][-8:]]
         return {'ledger_id': state['review_id'], 'review': {k: entry[k] for k in ('id', 'name', 'question', 'demo', 'created_utc')},
-                'records': state['records'], 'counts': state['prisma'], 'criteria': state['criteria'],
+                'criteria_managed_by_protocol': criteria_managed_by_protocol, 'screening_access': state['screening_access'], 'records': state['records'], 'counts': state['prisma'], 'criteria': state['criteria'],
                 'reviewers': json.loads(reviewers), 'adjudicator': adjudicator, 'summary': descriptive_summary(records),
                 'evidence': evidence_summary, 'activity': list(reversed(events)),
                 'jobs': [dict(job) for job in self.jobs.values() if job.get('review_id') == identifier],
@@ -163,6 +165,10 @@ class Workspace:
         if any(j.get('review_id') == identifier and j['status'] == 'running' for j in self.jobs.values()):
             raise ValueError('A retrieval job is already running for this review')
         state = screening.snapshot(entry['screening_db'])
+        if entry.get('run'):
+            _,_,origin=screening.verify_run(entry['run'])
+            if origin!=state['origin']:
+                raise ValueError('This review was updated outside the workspace. Reconnect it or create a new review with combined metadata before changing its corpus.')
         if not entry.get('run') and state['records']:
             raise ValueError('This connected review has no original retrieval folder. Create a new review and import its retrieved metadata together with the additional files.')
         if state['events'] or entry.get('evidence_db'):
@@ -199,67 +205,117 @@ class Workspace:
             return self._replace_corpus(entry, state, run, folder)
 
     def _replace_corpus(self, entry, state, run, folder):
-        rows, _, _ = screening.verify_run(run)
+        rows, _, manifest = screening.verify_run(run)
+        if manifest.get('mode','').startswith(('live','approved')):
+            authorization=manifest.get('authorization')
+            if not authorization or authorization.get('kind')!='main':
+                raise ValueError('Only an approved main search may replace a review corpus')
+            review_plan.check_authorization(entry['screening_db'],authorization)
         descriptive_summary([Record(**row) for row in rows])
         old = Path(entry['screening_db'])
         with sqlite3.connect(old.resolve().as_uri() + '?mode=ro', uri=True) as conn:
             reviewers, adjudicator = conn.execute('SELECT reviewers,adjudicator FROM review').fetchone()
+            initial_criteria = conn.execute('SELECT text FROM criteria ORDER BY version LIMIT 1').fetchone()[0]
         db = folder / 'screening.sqlite'
-        screening.initialize(db, run, entry['name'], json.loads(reviewers), adjudicator, state['criteria']['text'])
+        screening.initialize(db, run, entry['name'], json.loads(reviewers), adjudicator, initial_criteria)
+        questions.copy_history(old, db)
+        review_plan.copy_history(old, db)
         self.update(entry['id'], run=str(run), screening_db=str(db))
         return {'review_id': entry['id'], 'records': len(screening.snapshot(db)['records'])}
 
     def search(self, identifier, body):
+        return self.plan_run(identifier, body, 'main')
+
+    def plan_run(self, identifier, body, kind):
         with self.lock:
-            entry, state = self.mutable_corpus(identifier)
-            if state['records']:
-                raise ValueError('Search requires an empty review; import combined retrieval JSON files to combine searches.')
-            config = {'query': body.get('query'), 'sources': body.get('sources'), 'max_records_per_source': body.get('limit', 100)}
-            for key in ('year_from', 'year_to', 'date_from', 'date_to'):
-                if body.get(key) is not None:
-                    config[key] = body[key]
-            from .cli import load_config
-            from .pipeline import run_plan, validate_plan
-            plan = None
-            if 'queries' in body:
-                plan = validate_plan({**{k: v for k, v in config.items() if k != 'query'}, 'queries': body['queries'], **({'relevance_policy':body['relevance_policy']} if body.get('relevance_policy') is not None else {})})
-            folder = self.root / ('search-' + uuid4().hex)
-            folder.mkdir()
-            config_path = folder / 'review.toml'
-            config_path.write_text('\n'.join(k + ' = ' + json.dumps(v) for k, v in config.items()), encoding='utf-8')
-            load_config(config_path)
-            job_id = uuid4().hex
-            self.jobs[job_id] = {'id': job_id, 'review_id': identifier, 'status': 'running', 'started_utc': timestamp()}
+            entry = self.entry(identifier)
+            if any(j.get('review_id')==identifier and j['status']=='running' for j in self.jobs.values()):
+                raise ValueError('A review job is already running')
+            if kind == 'main':
+                entry, corpus = self.mutable_corpus(identifier)
+                if corpus['records']:
+                    raise ValueError('Main search requires an empty review; existing corpora are preserved')
+            if any(k in body for k in ('query','queries','sources','limit','year_from','year_to','date_from','date_to')):
+                raise ValueError('Search settings come from the approved protocol. Open Review protocol to edit and approve them.')
+            authorization = review_plan.authorize(entry['screening_db'], body, kind)
+            job_id = authorization['run_id']
+            folder = self.root / ('approved-'+kind+'-'+job_id)
+            job = {'id':job_id,'review_id':identifier,'status':'running','stage':kind+' search',
+                   'session_report':str(folder/'SESSION.md'),'started_utc':timestamp()}
+            self.jobs[job_id]=job
             self._save_jobs()
             def execute():
+                result = None
                 try:
-                    if plan is not None:
-                        def progress(event):
-                            with self.lock:
-                                self.jobs[job_id].update(event)
-                                self._save_jobs()
-                        run = run_plan(plan, folder / 'pipeline', progress=progress)
-                    else:
-                        run = run_search(config_path, folder / 'retrieval')
+                    result = review_plan.run_authorized(entry['screening_db'], authorization, folder)
                     with self.lock:
-                        self._replace_corpus(entry, state, run, folder)
-                        self.jobs[job_id].update(status='complete', finished_utc=timestamp())
-                        if plan is not None:
-                            report = json.loads((folder / 'pipeline' / 'session.json').read_text())
-                            self.jobs[job_id]['outcome'] = report['status']
-                            self.jobs[job_id]['calibration_available'] = (folder / 'pipeline' / 'calibration' / 'manifest.json').exists()
+                        review_plan.check_authorization(entry['screening_db'], authorization)
+                        if kind == 'main':
+                            # Registration re-check happens under the same workspace lock as edits.
+                            _, corpus = self.mutable_corpus_for_registration(identifier, job_id)
+                            self._replace_corpus(entry, corpus, result, folder)
+                        active = self.entry(identifier)['screening_db']
+                        review_plan.record_run(active, authorization, result, 'complete')
+                        job.update(status='complete',finished_utc=timestamp())
                         self._save_jobs()
                 except Exception as exc:
+                    reason = str(exc) if isinstance(exc,(ValueError,OSError,RuntimeError)) else type(exc).__name__
                     with self.lock:
-                        self.jobs[job_id].update(status='failed', error=str(exc) if isinstance(exc, (ValueError, OSError, RuntimeError)) else 'Retrieval failed', finished_utc=timestamp())
-                        if plan is not None and (folder / 'pipeline' / 'session.json').exists():
-                            from .pipeline import SessionJournal
-                            journal = SessionJournal.reopen(folder / 'pipeline')
-                            journal.data['status'] = 'failed'
-                            journal.record('dashboard job', 'error', str(exc), remedy='Inspect pipeline and corpus registration artifacts. The selected corpus changes only after verification succeeds.')
+                        active = self.entry(identifier)['screening_db']
+                        review_plan.record_run(active, authorization, result or folder/'retrieval', 'failed', error=reason)
+                        job.update(status='failed',error=reason,finished_utc=timestamp())
                         self._save_jobs()
             self.executor.submit(execute)
-            return dict(self.jobs[job_id])
+            return dict(job)
+
+    def mutable_corpus_for_registration(self, identifier, own_job):
+        entry=self.entry(identifier)
+        if any(j.get('review_id')==identifier and j['status']=='running' and j['id']!=own_job for j in self.jobs.values()):
+            raise ValueError('Another review job is running')
+        snapshot=screening.snapshot(entry['screening_db'])
+        if snapshot['events'] or entry.get('evidence_db') or snapshot['records']:
+            raise ValueError('The corpus changed; results retained separately')
+        return entry,snapshot
+
+    def plan_action(self, identifier, body):
+        with self.lock:
+            entry=self.entry(identifier)
+            if body.get('action')=='ai-decision':
+                from .protocol_ai import decide
+                return decide(entry['screening_db'],body)
+            if body.get('action')!='ai-request':
+                return review_plan.mutate(entry['screening_db'],body)
+            self.guard_ai_job(identifier)
+            config=dict(self.ai.config)
+            if config.get('mode')=='off':raise ValueError('Select a model in Settings first')
+            if (body.get('selected_provider'),body.get('selected_model'))!=(config['provider'],config['model']):
+                raise ValueError('AI selection changed. Review the selected model before running.')
+            if config['mode']=='cloud' and body.get('allow_external') is not True:
+                raise ValueError('Confirm sending the approved questions and selected section to the cloud provider')
+            from . import protocol_ai
+            packet=protocol_ai.request(entry['screening_db'],body,config)
+            job_id=uuid4().hex;folder=self.root/('protocol-ai-'+job_id)
+            from .pipeline import SessionJournal
+            journal=SessionJournal(folder,{'operation':'Protocol AI','request_id':packet['request_id'],'section':body.get('section')})
+            job={'id':job_id,'review_id':identifier,'status':'running','stage':'Protocol suggestions','task':'protocol','provider':config['provider'],'model':config['model'],
+                 'session_report':str(folder/'SESSION.md'),'started_utc':timestamp()}
+            self.jobs[job_id]=job;self._save_jobs()
+            def execute():
+                try:
+                    response=self.ai.run_packet(packet,folder/'model',allow_external=body.get('allow_external') is True,config=config)
+                    protocol_ai.record(entry['screening_db'],response)
+                    journal.data['status']='complete';journal.record('Protocol AI','info','Proposals recorded without changing the protocol draft or approval',evidence='model/response.json')
+                    with self.lock:job.update(status='complete',finished_utc=timestamp());self._save_jobs()
+                except Exception as exc:
+                    reason=str(exc) if isinstance(exc,ValueError) else type(exc).__name__
+                    protocol_ai.failure(entry['screening_db'],packet['request_id'],reason)
+                    journal.data['status']='failed';journal.record('Protocol AI','error',reason,remedy='Review the response and explicitly retry, or continue manually. Draft and approvals are unchanged.')
+                    with self.lock:job.update(status='failed',error=reason,finished_utc=timestamp());self._save_jobs()
+            self.executor.submit(execute)
+            return dict(job)
+
+    def pilot_preview(self, identifier):
+        return review_plan.inspect_pilots(self.entry(identifier)['screening_db'])
 
     def mutate_screening(self, identifier, body):
         with self.lock:
@@ -270,6 +326,8 @@ class Workspace:
             version, action = body['version'], body['action']
             if type(version) is not int:
                 raise ValueError('Criteria version must be an integer')
+            if action == 'screening-access':
+                return screening.screening_access(db, body.get('actor'), body.get('rationale'), expected_version=version, expected_binding=body.get('binding'), revoke=body.get('revoke'))
             if action in ('decide', 'adjudicate'):
                 screening.decide(db, body['record_id'], body['actor'], body['stage'], body['decision'], body.get('reason', ''),
                                   adjudicate=action == 'adjudicate', expected_version=version)
@@ -282,6 +340,91 @@ class Workspace:
             else:
                 raise ValueError('Unknown screening action')
             return {'saved': True}
+
+    def guard_ai_job(self, identifier):
+        if any(j.get('review_id') == identifier and j.get('task') in ('questions','protocol','evidence') and j['status'] == 'running' for j in self.jobs.values()):
+            raise ValueError('AI is already working for this review. Wait for it to finish before starting another request.')
+
+    def ai_jobs(self):
+        with self.lock:
+            fields = ('id','review_id','task','status','stage','provider','model','started_utc','finished_utc','error')
+            return {'jobs': [{k:j[k] for k in fields if k in j} for j in self.jobs.values() if j.get('task') in ('questions','protocol','evidence')]}
+
+    def run_ai_request(self,identifier,body):
+        with self.lock:
+            entry=self.entry(identifier)
+            if not entry.get('evidence_db'):raise ValueError('Start an evidence ledger first')
+            self.guard_ai_job(identifier)
+            packet=evidence.get_request(entry['evidence_db'],body['request_id'])
+            config=dict(self.ai.config)
+            if config.get('mode')=='off':raise ValueError('Open Settings and select an AI model first')
+            if body.get('selected_provider')!=config['provider'] or body.get('selected_model')!=config['model']:
+                raise ValueError('AI selection changed. Review the selected provider/model before running.')
+            if config.get('mode')=='cloud' and body.get('allow_external') is not True:
+                raise ValueError('Confirm sending this saved request to the selected cloud provider')
+            job_id=uuid4().hex;folder=self.root/('ai-request-'+job_id)
+            from .pipeline import SessionJournal
+            journal=SessionJournal(folder,{'operation':'AI generation','provider':config['provider'],'model':config['model'],'request_id':packet['request_id']})
+            job={'id':job_id,'review_id':identifier,'status':'running','stage':'Generating AI proposals','task':'evidence','session_report':str(folder/'SESSION.md'),'provider':config['provider'],'model':config['model'],'started_utc':timestamp()}
+            self.jobs[job_id]=job;self._save_jobs()
+            def execute():
+                try:
+                    envelope=self.ai.run_packet(packet,folder/'model',allow_external=body.get('allow_external') is True,config=config)
+                    ids=evidence.import_ai(entry['evidence_db'],envelope)
+                    journal.data['status']='complete'
+                    journal.record('AI generation','info',f'{len(ids)} proposals imported pending human review',evidence='model/response.json')
+                    with self.lock:job.update(status='complete',stage='AI proposals await human review',proposal_ids=ids,finished_utc=timestamp());self._save_jobs()
+                except Exception as exc:
+                    journal.data['status']='failed'
+                    reason=str(exc) if isinstance(exc,ValueError) else type(exc).__name__
+                    journal.record('AI generation or validation','error',reason,evidence='model/',remedy='Inspect saved output and provider usage before an explicit retry. No proposals are automatically approved.')
+                    with self.lock:job.update(status='failed',error=('AI request failed: '+reason if isinstance(exc,ValueError) else 'AI generation or proposal validation failed. Inspect saved output and provider usage before retrying.'),finished_utc=timestamp());self._save_jobs()
+            self.executor.submit(execute)
+            return dict(job)
+
+
+    def question_action(self, identifier, body):
+        with self.lock:
+            entry = self.entry(identifier)
+            if body.get('action') != 'request':
+                return questions.mutate(entry['screening_db'], body)
+            self.guard_ai_job(identifier)
+            config = dict(self.ai.config)
+            if config.get('mode') == 'off':
+                raise ValueError('Open Settings and select an AI model first')
+            if (body.get('selected_provider'), body.get('selected_model')) != (config['provider'], config['model']):
+                raise ValueError('AI selection changed. Review the selected provider/model before running.')
+            if config['mode'] == 'cloud' and body.get('allow_external') is not True:
+                raise ValueError('Confirm sending the saved topic and questions to the selected cloud provider')
+            result = questions.mutate(entry['screening_db'], body | {'provider': config['provider'], 'model': config['model']})
+            packet = result['history'][-1]['content']['packet']
+            job_id = uuid4().hex
+            folder = self.root / ('question-ai-' + job_id)
+            from .pipeline import SessionJournal
+            journal = SessionJournal(folder, {'operation': 'Topic/question proposals', 'request_id': packet['request_id'],
+                                             'provider': config['provider'], 'model': config['model']})
+            job = {'id': job_id, 'review_id': identifier, 'status': 'running', 'stage': 'Topic/question proposals', 'task':'questions', 'provider':config['provider'], 'model':config['model'],
+                   'session_report': str(folder / 'SESSION.md'), 'started_utc': timestamp()}
+            self.jobs[job_id] = job
+            self._save_jobs()
+            def execute():
+                try:
+                    envelope = self.ai.run_packet(packet, folder / 'model', allow_external=body.get('allow_external') is True, config=config)
+                    questions.record_response(entry['screening_db'], envelope)
+                    journal.data['status'] = 'complete'
+                    journal.record('Topic/question AI', 'info', 'Proposals recorded; draft and approval unchanged', evidence='model/response.json')
+                    with self.lock:
+                        job.update(status='complete', finished_utc=timestamp())
+                        self._save_jobs()
+                except Exception as exc:
+                    reason = str(exc) if isinstance(exc, ValueError) else type(exc).__name__
+                    journal.data['status'] = 'failed'
+                    journal.record('Topic/question AI', 'error', reason, remedy='Inspect saved response and provider usage before explicitly retrying. No draft or approval was changed.')
+                    with self.lock:
+                        job.update(status='failed', error=reason, finished_utc=timestamp())
+                        self._save_jobs()
+            self.executor.submit(execute)
+            return dict(job)
 
     def evidence_action(self, identifier, body):
         with self.lock:
@@ -443,9 +586,8 @@ class Workspace:
     def export(self, identifier):
         entry = self.entry(identifier)
         folder = self.root / ('export-' + uuid4().hex)
-        export_review(entry['screening_db'], folder / 'screening')
-        if entry.get('evidence_db'):
-            export_evidence(entry['evidence_db'], folder / 'evidence')
+        from .replication import create as create_bundle
+        create_bundle(entry['screening_db'], folder, entry.get('evidence_db'))
         result = io.BytesIO()
         with zipfile.ZipFile(result, 'w', zipfile.ZIP_DEFLATED) as archive:
             for path in folder.rglob('*'):
@@ -499,8 +641,13 @@ class Handler(BaseHTTPRequestHandler):
             if path in ('/', '/index.html'):
                 value = (WEB / 'index.html').read_text(encoding='utf-8').replace('__SLR_TOKEN__', self.server.token)
                 return self.send(200, value.encode(), 'text/html; charset=utf-8')
-            if path in ('/app.js', '/styles.css'):
+            if path in ('/app.js', '/settings.js', '/questions.js', '/question_frameworks.js', '/protocol.js', '/protocol_helpers.js', '/verification.js', '/styles.css'):
                 return self.send(200, (WEB / path[1:]).read_bytes(), 'text/javascript; charset=utf-8' if path.endswith('.js') else 'text/css; charset=utf-8')
+            if path == '/api/question-frameworks':
+                from .question_frameworks import catalog
+                return self.send(200, catalog())
+            if path == '/api/ai-settings':
+                return self.send(200, self.server.workspace.ai.status())
             if path == '/api/workspace':
                 return self.send(200, self.server.workspace.list())
             if path == '/api/job-calibration':
@@ -514,6 +661,8 @@ class Handler(BaseHTTPRequestHandler):
                 if not job or not job.get('session_report'):
                     raise ValueError('Session report not available')
                 return self.send(200, {'markdown': Path(job['session_report']).read_text(encoding='utf-8')})
+            if path == '/api/ai-jobs':
+                return self.send(200, self.server.workspace.ai_jobs())
             if path == '/api/job':
                 job = self.server.workspace.jobs.get(query.get('id', [''])[0])
                 if not job:
@@ -526,6 +675,12 @@ class Handler(BaseHTTPRequestHandler):
                 if path == '/api/corpus-export':
                     return self.send(200,self.server.workspace.export_corpus(identifier,**options),'application/zip',download='corpus-analysis.zip')
                 return self.send(200,self.server.workspace.corpus_analysis(identifier,**options))
+            if path == '/api/plan':
+                return self.send(200, review_plan.state(entry['screening_db']) | {'pilots':self.server.workspace.pilot_preview(identifier)})
+            if path == '/api/questions':
+                return self.send(200, questions.state(entry['screening_db']))
+            if path == '/api/questions-export':
+                return self.send(200, questions.disclosure(entry['screening_db']), download='ai-assistance-and-revision-record.json')
             if path == '/api/state':
                 return self.send(200, self.server.workspace.state(identifier))
             if path == '/api/queue':
@@ -550,6 +705,27 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             self._check(True)
+            if urlsplit(self.path).path == '/api/verify-bundle':
+                if self.headers.get('Content-Type', '').split(';')[0] != 'application/zip':
+                    raise ValueError('Choose a review bundle ZIP')
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 64 * 1024 * 1024:
+                    raise ValueError('Viewer upload limit is 64 MiB; use slr verify for larger local bundles')
+                from .replication import verify
+                with tempfile.TemporaryDirectory(prefix='litatlas-viewer-') as temp:
+                    path = Path(temp) / 'bundle.zip'
+                    remaining = length
+                    with path.open('xb') as handle:
+                        while remaining:
+                            data = self.rfile.read(min(remaining, 1024 * 1024))
+                            if not data: raise ValueError('Incomplete ZIP upload')
+                            handle.write(data)
+                            remaining -= len(data)
+                    with zipfile.ZipFile(path) as archive:
+                        if sum(i.file_size for i in archive.infolist()) > 128 * 1024 * 1024:
+                            raise ValueError('Viewer expanded-size limit is 128 MiB; use slr verify for larger local bundles')
+                    result = verify(path)
+                return self.send(200, result)
             if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
                 raise ValueError('Send JSON requests')
             length = int(self.headers.get('Content-Length', '0'))
@@ -560,10 +736,22 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError('Request must be a JSON object')
             workspace = self.server.workspace
             path = urlsplit(self.path).path
+            if path == '/api/ai-settings':
+                action = body.get('action')
+                if action == 'local-setup':
+                    if body.get('accept_license') is not True:raise ValueError('Review and accept the selected model license before downloading')
+                    result = workspace.ai.setup(body.get('model'))
+                elif action == 'cloud-models':result = workspace.ai.cloud_models(body.get('provider'), body.get('key'), body.get('remember') is True)
+                elif action == 'cloud-save':result = workspace.ai.save_cloud(body.get('provider'), body.get('model'))
+                elif action == 'test':result = workspace.ai.test()
+                elif action == 'off':result = workspace.ai.disable()
+                elif action == 'forget-key':result = workspace.ai.remove_key(body.get('provider'))
+                else:raise ValueError('Unknown AI settings action')
+                return self.send(200,result)
             if path == '/api/create':
                 return self.send(200, workspace.create(body))
             identifier = body.get('review_id')
-            if path in ('/api/import', '/api/search', '/api/screening', '/api/evidence', '/api/venue-metrics', '/api/venue-metrics-fetch'):
+            if path in ('/api/import', '/api/search', '/api/screening', '/api/evidence', '/api/venue-metrics', '/api/venue-metrics-fetch', '/api/evidence-run', '/api/questions', '/api/plan', '/api/plan-run'):
                 workspace.guard_ledger(identifier, body)
             if path == '/api/venue-metrics-fetch':
                 return self.send(200,workspace.fetch_venue_metrics(identifier,body))
@@ -575,6 +763,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, workspace.search(identifier, body))
             if path == '/api/screening':
                 return self.send(200, workspace.mutate_screening(identifier, body))
+            if path == '/api/plan':
+                return self.send(200, workspace.plan_action(identifier,body))
+            if path == '/api/plan-run':
+                return self.send(200, workspace.plan_run(identifier,body,body.get('kind')))
+            if path == '/api/questions':
+                return self.send(200, workspace.question_action(identifier, body))
+            if path == '/api/evidence-run':
+                return self.send(200,workspace.run_ai_request(identifier,body))
             if path == '/api/evidence':
                 return self.send(200, workspace.evidence_action(identifier, body))
             self.send(404, {'error': 'Not found'})
@@ -584,7 +780,7 @@ class Handler(BaseHTTPRequestHandler):
     def error(self, exc):
         if isinstance(exc, PermissionError):
             self.send(403, {'error': str(exc)})
-        elif isinstance(exc, (ValueError, TypeError, KeyError, sqlite3.IntegrityError)):
+        elif isinstance(exc, (ValueError, TypeError, KeyError, sqlite3.IntegrityError, zipfile.BadZipFile)):
             self.send(400, {'error': str(exc) if not isinstance(exc, KeyError) else 'Missing request field'})
         elif isinstance(exc, (BrokenPipeError, ConnectionResetError)):
             pass
@@ -615,5 +811,6 @@ def main(argv=None):
     finally:
         if 'server' in locals():
             server.server_close()
+        workspace.ai.close()
         workspace.executor.shutdown(wait=False, cancel_futures=True)
     return 0

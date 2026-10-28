@@ -1,3 +1,4 @@
+from conftest import defer_protocol
 import json
 from hashlib import sha256
 
@@ -13,6 +14,7 @@ def ledger(tmp_path):
     run('configs/example_review.toml', tmp_path / 'run', 'Examples/demo_records.json')
     db = tmp_path / 'review.sqlite'
     screening.initialize(db, tmp_path / 'run', '<script>Review</script>', ['alice', 'bob'], 'carol', 'Criteria')
+    defer_protocol(db)
     return db
 
 
