@@ -14,9 +14,13 @@ slr --version
 slr dashboard --workspace ~/litatlas-workspace --demo
 ```
 
-Install [pipx](https://pipx.pypa.io/stable/installation/) first, or use a Python virtual environment and `python -m pip install PATH_TO_WHEEL`. On Windows, replace `~/litatlas-workspace` with a directory you own, for example `C:/Users/YOUR_NAME/LitAtlas`. After publication, `pipx install slr-workbench` will be available. The core dashboard runs offline; live searches and optional providers require network access. Keep a backup of the complete workspace folder.
+Install [pipx](https://pipx.pypa.io/stable/installation/) first, or use a Python virtual environment and `python -m pip install PATH_TO_WHEEL`. On Windows, replace `~/litatlas-workspace` with a directory you own, for example `C:/Users/YOUR_NAME/LitAtlas`. PyPI publication requires separate owner setup. The core dashboard runs offline; live searches and optional providers require network access. Keep a backup of the complete workspace folder.
 
 See [Installation](Docs/Installation_Guide.md), [release preparation](Docs/Release_Guide.md) and [CHANGELOG](CHANGELOG.md). This is a trusted local workflow: reviewer labels are not authenticated user accounts.
+
+## Cite LitAtlas
+
+For the archived v0.6.0 release, cite [DOI 10.5281/zenodo.24047131](https://doi.org/10.5281/zenodo.24047131). The [concept DOI 10.5281/zenodo.24047130](https://doi.org/10.5281/zenodo.24047130) identifies the project across versions.
 
 ## Open the interactive dashboard
 
