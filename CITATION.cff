@@ -3,6 +3,7 @@ message: "If you adapt or reuse these research-methods materials, please cite th
 title: "Systematic and Bibliometric Literature Review"
 type: software
 version: 0.6.0
+doi: "10.5281/zenodo.24047131"
 authors:
   - family-names: Nti
     given-names: Isaac Kofi
