@@ -39,7 +39,7 @@ def export_records(folder, records):
     folder = Path(folder)
     rows = [record.to_dict() for record in records]
     write_json(folder / "records.json", rows)
-    fields = ["source", "source_id", "title", "doi", "abstract", "authors", "year", "journal", "citations", "url", "provenance", "author_ids", "keywords", "references", "reference_count"]
+    fields = ["source", "source_id", "title", "doi", "abstract", "authors", "year", "journal", "citations", "url", "provenance", "author_ids", "keywords", "references", "reference_count", "venue_id", "issns", "publisher", "affiliations", "affiliation_ids", "countries", "subject_areas", "subject_taxonomy"]
     write_csv(folder / "records.csv", fields, [{key: json.dumps(value, ensure_ascii=False) if isinstance(value, list) else value
                                                for key, value in row.items()} for row in rows])
     def bib(value):

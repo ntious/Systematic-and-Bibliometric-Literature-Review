@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you adapt or reuse these research-methods materials, please cite the repository."
 title: "Systematic and Bibliometric Literature Review"
 type: software
+version: 0.6.0
 authors:
   - family-names: Nti
     given-names: Isaac Kofi

@@ -27,7 +27,7 @@ NOTICES = [
 
 def analyze(output, *, input_path=None, run_folder=None, database=None, allow_incomplete=False,
             min_occurrences=1, min_edge_count=1, normalization='cosine', max_pair_events=2000000,
-            figures=False, max_figure_nodes=40):
+            figures=False, max_figure_nodes=40, venue_metrics=None, metric_year=None, metric_category=None):
     if sum(value is not None for value in (input_path, run_folder, database)) != 1:
         raise ValueError('Choose exactly one JSON input, retrieval run, or screening database')
     if type(max_figure_nodes) is not int or not 1 <= max_figure_nodes <= 100:
@@ -68,6 +68,13 @@ def analyze(output, *, input_path=None, run_folder=None, database=None, allow_in
         write_json(output / 'duplicates.json', duplicates)
         write_json(output / 'origin.json', origin)
         write_json(output / 'summary.json', summary)
+        from .corpus import corpus_summary, parse_venue_metrics
+        metric_rows=parse_venue_metrics(Path(venue_metrics).read_text(encoding='utf-8-sig')) if venue_metrics else []
+        corpus=corpus_summary(unique,metric_rows,year=metric_year,category=metric_category)
+        from .corpus import export_corpus
+        export_corpus(corpus,output)
+        if venue_metrics:
+            (output/'venue-metrics-input.csv').write_bytes(Path(venue_metrics).read_bytes())
         write_json(output / 'coverage.json', diagnostics)
         settings = {'min_occurrences': min_occurrences, 'min_edge_count': min_edge_count, 'normalization': normalization,
                     'max_pair_events': max_pair_events, 'counting': 'full', 'figures': figures, 'max_figure_nodes': max_figure_nodes}
@@ -140,6 +147,17 @@ def _html(folder, summary, graphs, origin, figures):
              '<p>Inspect <a href="methods.json">methods and settings</a>, <a href="coverage.json">coverage</a>, and <a href="origin.json">input provenance</a> before interpreting results.</p>',
              '<h2>Limitations</h2><ul>' + ''.join('<li>' + escape(n) + '</li>' for n in NOTICES) + '</ul>',
              '<h2>Networks</h2><table><tr><th>Network</th><th>Coverage (reports)</th><th>Nodes</th><th>Edges</th><th>Data</th></tr>']
+    corpus=json.loads((folder/'corpus-summary.json').read_text())
+    def cell(value):return '—' if value is None or value=='' else escape(str(value))
+    summary_table='<h2>Summary of results</h2><table><tr><th>Measure</th><th>Observed total</th><th>Reports with metadata</th></tr>'+''.join('<tr><td>'+escape(k.replace('_',' ').title())+'</td><td>'+cell(v)+'</td><td>'+str(corpus['coverage'].get(k,{}).get('records',corpus['totals']['papers']))+'/'+str(corpus['totals']['papers'])+'</td></tr>' for k,v in corpus['totals'].items())+'</table>'
+    table='<h2>Top 10 publication venues</h2><div style="overflow-x:auto"><table><tr>'+''.join('<th>'+h+'</th>' for h in ['#','Publication venue','TP','CiteScore','SNIP','SJR','Quartile','Publisher','Source H-index','Year / category','Metric source / retrieval date'])+'</tr>'
+    for venue in corpus['venues'][:10]:
+        m=venue['external_metrics'] or {}
+        def external(key):return '*' if m.get('statuses',{}).get(key)=='not-applicable' else cell(m.get(key))
+        values=[str(venue['rank']),escape(venue['name']),str(venue['publications']),external('citescore'),external('snip'),external('sjr'),cell(m.get('quartile'))+'<br>'+escape(m.get('quartile_basis') or ''),cell(venue['publisher'] or None),external('h_index'),escape(str(m.get('year','—'))+' / '+m.get('category','—')),escape(m.get('metric_source','—')+' / '+m.get('retrieved_date','—'))]
+        table+='<tr>'+''.join('<td>'+value+'</td>' for value in values)+'</tr>'
+    table+='</table></div><p><a href="metric-sources.md">External metric source footnotes</a></p><p>TP is the selected corpus publication count. External metrics are dated provider snapshots; — is missing, * is explicitly not applicable. Ambiguous metric matches remain blank.</p>'
+    parts.insert(4,summary_table+table+'<p><a href="corpus-summary.json">Corpus data and definitions</a> · <a href="publication-venues.csv">All ranked venues CSV</a></p><ul>'+''.join('<li>'+escape(n)+'</li>' for n in corpus['notices'])+'</ul>')
     for kind, graph in graphs.items():
         c = graph['coverage']
         parts.append(f'<tr><td>{kind}</td><td>{c["records_with_usable_metadata"]}/{c["records_total"]}</td><td>{len(graph["nodes"])}</td><td>{len(graph["edges"])}</td><td><a href="{kind}.json">JSON</a> / <a href="{kind}.graphml">GraphML</a></td></tr>')
@@ -160,6 +178,9 @@ def main(argv=None):
     inputs.add_argument('--run', help='Completed, hash-verified retrieval/import directory')
     inputs.add_argument('--db', help='Screening database; analyze included reports')
     parser.add_argument('--output', required=True)
+    parser.add_argument('--venue-metrics', help='Dated external venue-metrics CSV; no online metric lookup')
+    parser.add_argument('--metric-year', type=int)
+    parser.add_argument('--metric-category')
     parser.add_argument('--allow-incomplete', action='store_true')
     parser.add_argument('--min-occurrences', type=int, default=1)
     parser.add_argument('--min-edge-count', type=int, default=1)
@@ -172,7 +193,7 @@ def main(argv=None):
         output = analyze(args.output, input_path=args.input, run_folder=args.run, database=args.db,
             allow_incomplete=args.allow_incomplete, min_occurrences=args.min_occurrences,
             min_edge_count=args.min_edge_count, normalization=args.normalization, max_pair_events=args.max_pair_events,
-            figures=args.figures, max_figure_nodes=args.max_figure_nodes)
+            figures=args.figures, max_figure_nodes=args.max_figure_nodes, venue_metrics=args.venue_metrics, metric_year=args.metric_year, metric_category=args.metric_category)
     except (ValueError, TypeError, OSError, KeyError, sqlite3.DatabaseError) as exc:
         parser.exit(1, f'slr analyze: {exc}\n')
     print(f'Bibliometric artifacts written to {output}')

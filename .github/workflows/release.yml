@@ -1,0 +1,68 @@
+name: Publish Python release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify release tag and main ancestry
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python -c "import os,tomllib; v=tomllib.load(open('pyproject.toml','rb'))['project']['version']; assert os.environ['RELEASE_TAG']=='v'+v, 'Tag/version mismatch'"
+          git merge-base --is-ancestor HEAD origin/main
+      - run: python -m pip install -e '.[dev,analysis,ui-test,docs]'
+      - run: python -m pytest
+      - run: python -m playwright install --with-deps chromium
+      - run: python Scripts/check_dashboard_browser.py --output outputs/dashboard-qa
+      - run: python Scripts/check_corpus_browser.py --output outputs/dashboard-qa/corpus
+      - run: python Scripts/build_docs.py
+      - run: python -m mkdocs build --strict
+      - run: python -m build
+      - run: python -m twine check dist/*.whl dist/*.tar.gz
+      - run: python Scripts/check_distribution.py --dist dist
+      - run: python Scripts/check_installed_package.py --dist dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-distributions
+          path: dist/
+          if-no-files-found: error
+  publish:
+    if: vars.PYPI_PUBLISH_ENABLED == 'true'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/slr-workbench
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-distributions
+          path: dist
+      - name: Separate Python distributions from release checksums
+        run: |
+          mkdir packages
+          cp dist/*.whl dist/*.tar.gz packages/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/
+          skip-existing: false
+      - name: Attach the exact published distributions and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/* --clobber
